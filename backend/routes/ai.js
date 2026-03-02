@@ -175,7 +175,7 @@ router.post('/negotiate', async (req, res) => {
       return res.status(400).json({ error: 'נתונים חסרים' });
     }
 
-    const response = await getNegotiationResponse(message, role, listingPrice, history);
+    const response = getAIMockResponse(message, role, listingPrice, history);
     
     res.json({
       message: response.message,
