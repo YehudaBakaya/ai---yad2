@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Sparkles } from 'lucide-react';
-import { authAPI } from '../services/api';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles } from 'lucide-react';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
+import { saveUserProfile } from '../services/firestoreService';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Register() {
-  const navigate  = useNavigate();
-  const { login } = useAuth();
+  const navigate = useNavigate();
+  const { syncUser } = useAuth();
 
-  const [form, setForm]     = useState({ name: '', email: '', password: '', confirm: '' });
+  const [form, setForm]     = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -30,11 +32,33 @@ export default function Register() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await authAPI.register({ name: form.name, email: form.email, password: form.password });
-      login(res.data.token, res.data.user);
+      const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      await updateProfile(cred.user, { displayName: form.name.trim() });
+      await saveUserProfile(cred.user.uid, {
+        name:  form.name.trim(),
+        email: form.email.toLowerCase(),
+        phone: form.phone.trim() || null,
+      });
+      await syncUser();
       navigate('/');
     } catch (err) {
-      setErrors({ submit: err.response?.data?.error || 'שגיאה בהרשמה' });
+      const msg = err.code === 'auth/email-already-in-use'
+        ? 'האימייל כבר רשום במערכת'
+        : 'שגיאה בהרשמה';
+      setErrors({ submit: msg });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      await syncUser();
+      navigate('/');
+    } catch {
+      setErrors({ submit: 'שגיאה בהרשמה עם Google' });
     } finally {
       setLoading(false);
     }
@@ -61,8 +85,9 @@ export default function Register() {
           {/* Google OAuth */}
           <button
             type="button"
-            onClick={authAPI.googleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 mb-5 shadow-sm"
+            onClick={handleGoogle}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 mb-5 shadow-sm disabled:opacity-60"
           >
             <GoogleIcon />
             הרשם עם Google
@@ -91,6 +116,15 @@ export default function Register() {
                 <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
                   placeholder="you@example.com"
                   className={inputCls(errors.email)} />
+              </div>
+            </FormField>
+
+            <FormField label="טלפון (לפרטי התקשרות עם קונים)">
+              <div className="relative">
+                <Phone size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
+                  placeholder="050-0000000"
+                  className={inputCls()} />
               </div>
             </FormField>
 

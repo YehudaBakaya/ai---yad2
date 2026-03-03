@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, List, Plus, LogOut, User, ChevronDown } from 'lucide-react';
+import { Home, List, Plus, LogOut, LayoutList, ChevronDown, UserCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { subscribeUserPendingDeals } from '../services/firestoreService';
 
 export default function Navbar() {
   const { pathname } = useLocation();
   const { user, isLoggedIn, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingDeals, setPendingDeals] = useState(0);
   const menuRef = useRef(null);
 
   // סגור dropdown בלחיצה מחוץ
@@ -16,6 +18,13 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Subscribe to pending deals for notification badge
+  useEffect(() => {
+    if (!user?.id) { setPendingDeals(0); return; }
+    const unsub = subscribeUserPendingDeals(user.id, setPendingDeals);
+    return unsub;
+  }, [user?.id]);
+
   const isActive = (path) => path === '/' ? pathname === '/' : pathname.startsWith(path);
 
   return (
@@ -24,11 +33,11 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:scale-110">
+          <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-all duration-300 group-hover:scale-110">
             <span className="text-white font-extrabold text-lg">Y</span>
           </div>
           <span className="text-white font-extrabold text-xl tracking-tight">
-            יד<span className="text-blue-400">2</span> <span className="text-purple-400">AI</span>
+            יד<span className="text-cyan-400">2</span> <span className="text-violet-400">AI</span>
           </span>
         </Link>
 
@@ -45,7 +54,7 @@ export default function Navbar() {
               {/* Create listing */}
               <Link
                 to="/create"
-                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 text-sm shadow-md shadow-blue-500/20 hover:shadow-blue-500/40 transition-shadow"
+                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 text-sm shadow-md shadow-violet-500/20 hover:shadow-violet-500/40 transition-shadow"
               >
                 <Plus size={16} />
                 <span className="hidden sm:inline">פרסם</span>
@@ -55,12 +64,18 @@ export default function Navbar() {
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 px-3 py-2 rounded-xl transition-all"
+                  className="relative flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 px-3 py-2 rounded-xl transition-all"
                 >
+                  {/* Notification badge */}
+                  {pendingDeals > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow-md shadow-amber-500/40 animate-pulse">
+                      {pendingDeals > 9 ? '9+' : pendingDeals}
+                    </span>
+                  )}
                   {user?.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-6 h-6 rounded-full" />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-bold">
                       {user?.name?.[0]?.toUpperCase() || '?'}
                     </div>
                   )}
@@ -71,14 +86,40 @@ export default function Navbar() {
                 </button>
 
                 {menuOpen && (
-                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl shadow-black/30 overflow-hidden animate-fadeIn">
+                  <div className="absolute left-0 mt-2 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-xl shadow-black/30 overflow-hidden animate-fadeIn">
                     <div className="px-4 py-3 border-b border-slate-700">
                       <p className="text-white text-sm font-semibold truncate">{user?.name}</p>
                       <p className="text-gray-400 text-xs truncate">{user?.email}</p>
                     </div>
+
+                    <Link
+                      to="/my-listings"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center justify-between gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700/60 hover:text-white transition-colors text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <LayoutList size={15} className="text-violet-400" />
+                        המודעות שלי
+                      </div>
+                      {pendingDeals > 0 && (
+                        <span className="bg-amber-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">
+                          {pendingDeals}
+                        </span>
+                      )}
+                    </Link>
+
+                    <Link
+                      to="/profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700/60 hover:text-white transition-colors text-sm"
+                    >
+                      <UserCircle size={15} className="text-cyan-400" />
+                      הפרופיל שלי
+                    </Link>
+
                     <button
                       onClick={() => { logout(); setMenuOpen(false); }}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors text-sm"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors text-sm border-t border-slate-700"
                     >
                       <LogOut size={15} />
                       התנתק
@@ -97,7 +138,7 @@ export default function Navbar() {
               </Link>
               <Link
                 to="/register"
-                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg text-sm shadow-md shadow-blue-500/20"
+                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg text-sm shadow-md shadow-violet-500/20"
               >
                 הרשמה
               </Link>
@@ -118,7 +159,7 @@ function NavLink({ to, icon, label, active }) {
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>
-      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-blue-500 rounded-full" />}
+      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-violet-500 rounded-full" />}
     </Link>
   );
 }

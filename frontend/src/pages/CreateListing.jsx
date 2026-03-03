@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronLeft, ChevronRight, MapPin, Tag, FileText, ImagePlus, Sparkles } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, MapPin, Tag, FileText, Bot, Sparkles, X, Upload } from 'lucide-react';
 import SmartDescription from '../components/SmartDescription';
-import { listingsAPI } from '../services/api';
+import SellerInterview from '../components/SellerInterview';
+import { createListing } from '../services/firestoreService';
+import { useAuth } from '../contexts/AuthContext';
 
 const categories = [
   { id: 'real_estate', name: 'נדל"ן',      icon: '🏠' },
@@ -27,10 +29,12 @@ const STEPS = [
   { label: 'בסיסי',  icon: <Tag size={16} /> },
   { label: 'פרטים', icon: <MapPin size={16} /> },
   { label: 'תיאור',  icon: <FileText size={16} /> },
+  { label: 'סוכן',   icon: <Bot size={16} /> },
 ];
 
 export default function CreateListing() {
   const navigate  = useNavigate();
+  const { user }  = useAuth();
   const [step, setStep]     = useState(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -39,6 +43,10 @@ export default function CreateListing() {
     title: '', category: '', price: '',
     location: '', condition: 'טוב', description: '',
   });
+  const [images, setImages]   = useState([]); // array of { dataUrl, name }
+  const [sellerNotes, setSellerNotes] = useState(null);
+  const [interviewDone, setInterviewDone] = useState(false);
+  const fileInputRef = useRef(null);
 
   const set = (key, val) => {
     setFormData((prev) => ({ ...prev, [key]: val }));
@@ -62,11 +70,40 @@ export default function CreateListing() {
   const handleNext = () => { if (validateStep()) setStep((s) => s + 1); };
   const handleBack = () => setStep((s) => s - 1);
 
+  const handleImageFiles = (files) => {
+    const remaining = 5 - images.length;
+    const toProcess = Array.from(files).slice(0, remaining);
+    toProcess.forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImages(prev => [...prev, { dataUrl: e.target.result, name: file.name }]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    handleImageFiles(e.dataTransfer.files);
+  };
+
   const handleSubmit = async () => {
     if (!validateStep()) return;
     setLoading(true);
     try {
-      await listingsAPI.create({ ...formData, price: parseFloat(formData.price) });
+      const imageUrls = images.map(img => img.dataUrl);
+      await createListing(
+        {
+          ...formData,
+          price: parseFloat(formData.price),
+          images: imageUrls.length > 0 ? imageUrls : [],
+          sellerNotes: sellerNotes || null,
+        },
+        user
+      );
       setSuccess(true);
       setTimeout(() => navigate('/listings'), 2000);
     } catch {
@@ -278,15 +315,97 @@ export default function CreateListing() {
                 </div>
               )}
 
-              {/* Image placeholder */}
-              <div className="border-2 border-dashed border-slate-600 hover:border-blue-500/50 rounded-xl p-6 text-center transition-colors cursor-pointer group">
-                <ImagePlus size={28} className="text-gray-500 group-hover:text-blue-400 mx-auto mb-2 transition-colors" />
-                <p className="text-gray-400 text-sm">הוסף תמונות (בקרוב)</p>
-                <p className="text-gray-600 text-xs mt-1">ניתן להוסיף לאחר פרסום</p>
-              </div>
+              {/* Image uploader */}
+              <Field label={`תמונות (${images.length}/5)`}>
+                {/* Drop zone */}
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  onClick={() => images.length < 5 && fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-5 text-center transition-all
+                    ${images.length < 5
+                      ? 'border-slate-600 hover:border-blue-500/60 hover:bg-blue-500/5 cursor-pointer'
+                      : 'border-slate-700 opacity-50 cursor-not-allowed'}`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleImageFiles(e.target.files)}
+                  />
+                  <Upload size={24} className="text-gray-500 mx-auto mb-2" />
+                  {images.length < 5 ? (
+                    <>
+                      <p className="text-gray-400 text-sm">גרור תמונות לכאן או <span className="text-blue-400 font-medium">לחץ לבחור</span></p>
+                      <p className="text-gray-600 text-xs mt-1">JPG, PNG, WEBP • עד 5 תמונות</p>
+                    </>
+                  ) : (
+                    <p className="text-gray-500 text-sm">הגעת למגבלת 5 תמונות</p>
+                  )}
+                </div>
+
+                {/* Previews */}
+                {images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-3">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-600">
+                        <img
+                          src={img.dataUrl}
+                          alt={img.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {idx === 0 && (
+                          <span className="absolute bottom-1 left-1 bg-blue-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                            ראשית
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
+                          className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Field>
 
               {errors.submit && (
                 <p className="text-red-400 text-sm text-center">{errors.submit}</p>
+              )}
+            </div>
+          )}
+
+          {/* ── STEP 3: Seller Interview ── */}
+          {step === 3 && (
+            <div className="p-7 space-y-5">
+              <StepTitle icon="🤖" title="הגדרת סוכן AI" sub="ספר לסוכן כיצד לנהל משא ומתן עבורך" />
+
+              {!interviewDone ? (
+                <SellerInterview
+                  listingPrice={parseFloat(formData.price) || 0}
+                  onComplete={(notes) => {
+                    setSellerNotes(notes);
+                    setInterviewDone(true);
+                  }}
+                  onSkip={() => {
+                    setSellerNotes(null);
+                    setInterviewDone(true);
+                  }}
+                />
+              ) : (
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 text-sm text-gray-300 space-y-1.5">
+                  <p className="font-semibold text-purple-300 mb-2">סיכום הגדרות הסוכן</p>
+                  {sellerNotes?.minPrice && <p>💰 מחיר מינימלי: <span className="text-white font-bold">₪{Number(sellerNotes.minPrice).toLocaleString()}</span></p>}
+                  {sellerNotes?.flexibility && <p>📊 גמישות: <span className="text-white">{sellerNotes.flexibility}</span></p>}
+                  {sellerNotes?.reason && <p>📝 סיבת מכירה: <span className="text-white">{sellerNotes.reason}</span></p>}
+                  {sellerNotes?.terms && <p>📋 תנאים: <span className="text-white">{sellerNotes.terms}</span></p>}
+                  {!sellerNotes && <p className="text-gray-500">ללא הגדרות סוכן — הסוכן ינהל משא ומתן לפי ברירת מחדל</p>}
+                </div>
               )}
             </div>
           )}
@@ -317,8 +436,8 @@ export default function CreateListing() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading}
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+                disabled={loading || !interviewDone}
+                className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 {loading ? (
                   <>

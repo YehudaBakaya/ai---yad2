@@ -7,14 +7,14 @@ export default function ListingCard({ listing }) {
   const [heartAnim, setHeartAnim] = useState(false);
 
   const formatDate = (date) => {
-    const d = new Date(date);
-    const today = new Date();
-    const diff = today - d;
-
-    if (diff < 60000) return 'זה עתה';
-    if (diff < 3600000) return `לפני ${Math.floor(diff / 60000)} דקות`;
+    // Handle Firestore Timestamp or plain Date/string
+    const d = date?.toDate ? date.toDate() : new Date(date);
+    if (isNaN(d)) return '';
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000)    return 'זה עתה';
+    if (diff < 3600000)  return `לפני ${Math.floor(diff / 60000)} דקות`;
     if (diff < 86400000) return `לפני ${Math.floor(diff / 3600000)} שעות`;
-    if (diff < 604800000) return `לפני ${Math.floor(diff / 86400000)} ימים`;
+    if (diff < 604800000)return `לפני ${Math.floor(diff / 86400000)} ימים`;
     return d.toLocaleDateString('he-IL');
   };
 
@@ -26,29 +26,30 @@ export default function ListingCard({ listing }) {
   };
 
   const conditionColor = {
-    'חדש':    'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
-    'מעולה':  'bg-blue-500/20 text-blue-300 border border-blue-500/40',
-    'טוב':    'bg-amber-500/20 text-amber-300 border border-amber-500/40',
-    'זמין':   'bg-purple-500/20 text-purple-300 border border-purple-500/40',
-    'בריא':   'bg-teal-500/20 text-teal-300 border border-teal-500/40',
+    'חדש':         'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
+    'מעולה':       'bg-violet-500/20 text-violet-300 border border-violet-500/40',
+    'טוב':         'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40',
+    'סביר':        'bg-amber-500/20 text-amber-300 border border-amber-500/40',
+    'דורש תיקון': 'bg-red-500/20 text-red-300 border border-red-500/40',
   };
 
   return (
     <Link to={`/listings/${listing.id}`}>
       <div className="card-hover bg-slate-800 border border-slate-700 rounded-xl overflow-hidden cursor-pointer animate-fadeIn group">
+
         {/* Image */}
         <div className="relative h-44 bg-slate-700 overflow-hidden">
           <img
-            src={listing.images[0] || 'https://via.placeholder.com/300x200?text=No+Image'}
+            src={listing.images?.[0] || 'https://via.placeholder.com/300x200?text=No+Image'}
             alt={listing.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
 
-          {/* Dark overlay on hover */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+          {/* Gradient overlay on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent group-hover:from-black/50 transition-all duration-300" />
 
           {/* Category badge */}
-          <div className="absolute top-2 right-2 bg-blue-600/90 backdrop-blur text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg">
+          <div className="absolute top-2 right-2 bg-gradient-to-r from-violet-600/90 to-indigo-600/90 backdrop-blur text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg shadow-violet-500/30">
             {listing.category}
           </div>
 
@@ -73,14 +74,15 @@ export default function ListingCard({ listing }) {
 
         {/* Content */}
         <div className="p-4">
+
           {/* Title */}
-          <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-blue-300 transition-colors duration-200">
+          <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-violet-300 transition-colors duration-200">
             {listing.title}
           </h3>
 
           {/* Price */}
-          <div className="text-2xl font-extrabold mb-3 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            {listing.price === 0 ? 'חינם' : `₪${listing.price.toLocaleString()}`}
+          <div className="text-2xl font-extrabold mb-3 bg-gradient-to-r from-violet-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+            {listing.price === 0 ? 'חינם' : `₪${listing.price?.toLocaleString()}`}
           </div>
 
           {/* Condition & Rating */}
@@ -89,8 +91,8 @@ export default function ListingCard({ listing }) {
               {listing.condition}
             </span>
             {listing.rating && (
-              <span className="flex items-center gap-1 bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 px-2.5 py-1 rounded-full font-medium">
-                <Star size={11} className="fill-yellow-400 text-yellow-400" />
+              <span className="flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full font-medium">
+                <Star size={11} className="fill-amber-400 text-amber-400" />
                 {listing.rating}
               </span>
             )}
@@ -99,17 +101,17 @@ export default function ListingCard({ listing }) {
           {/* Meta info */}
           <div className="flex flex-col gap-1.5 text-xs text-gray-400 border-t border-slate-700/60 pt-3">
             <div className="flex items-center gap-1.5">
-              <MapPin size={13} className="text-blue-400 shrink-0" />
+              <MapPin size={13} className="text-cyan-400 shrink-0" />
               <span>{listing.location}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Calendar size={13} className="text-purple-400 shrink-0" />
+                <Calendar size={13} className="text-violet-400 shrink-0" />
                 <span>{formatDate(listing.date)}</span>
               </div>
               <div className="flex items-center gap-1 text-gray-500">
                 <Eye size={13} />
-                <span>{listing.views.toLocaleString()}</span>
+                <span>{(listing.views || 0).toLocaleString()}</span>
               </div>
             </div>
           </div>

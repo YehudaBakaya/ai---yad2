@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Listings ─────────────────────────────────────────────────────────────
+    match /listings/{listingId} {
+      // Anyone can read listings
+      allow read: if true;
+
+      // Only authenticated users can create their own listing
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Owner can update anything; anyone else can only increment views by 1
+      allow update: if
+        (request.auth != null && resource.data.userId == request.auth.uid)
+        ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+         && request.resource.data.views == resource.data.views + 1);
+
+      // Only owner can delete
+      allow delete: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+    }
+
+    // ── Deals ─────────────────────────────────────────────────────────────────
+    match /deals/{dealId} {
+      // Authenticated users can read deals (buyer sees their own, seller sees on listing)
+      allow read: if request.auth != null;
+
+      // Any authenticated user (buyer) can create a deal
+      allow create: if request.auth != null;
+
+      // Only status + updatedAt can be changed (seller approving/rejecting)
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data)
+                         .affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      // Deals cannot be deleted
+      allow delete: if false;
+    }
+
+    // ── User Profiles ─────────────────────────────────────────────────────────
+    match /users/{userId} {
+      // Users can only read and write their own profile
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+  }
+}

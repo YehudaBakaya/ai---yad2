@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, TrendingUp, Zap, ArrowLeft } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
-import { listingsAPI } from '../services/api';
+import { getListings, seedDemoListings } from '../services/firestoreService';
 
 const categories = [
   { id: 'real_estate', name: 'נדל"ן',     icon: '🏠', color: 'from-blue-600 to-blue-800' },
@@ -30,8 +30,13 @@ export default function Home() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const response = await listingsAPI.getAll();
-        setListings(response.data.slice(0, 6));
+        // Seed only once per browser — avoids an extra Firestore read on every visit
+        if (!localStorage.getItem('yad2_seeded')) {
+          await seedDemoListings();
+          localStorage.setItem('yad2_seeded', '1');
+        }
+        const { results } = await getListings();
+        setListings(results.slice(0, 6));
       } catch (error) {
         console.error('Error fetching listings:', error);
       } finally {
@@ -54,8 +59,9 @@ export default function Home() {
       {/* ===== HERO ===== */}
       <section className="hero-gradient text-white py-20 px-4 relative overflow-hidden">
         {/* Decorative blobs */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-20 -right-20 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-800/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center mb-10 animate-fadeIn">
@@ -64,7 +70,7 @@ export default function Home() {
               <span>מופעל בבינה מלאכותית</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight">
-              יד2 עם <span className="text-yellow-300">AI</span>
+              יד2 עם <span className="bg-gradient-to-r from-violet-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">AI</span>
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-xl mx-auto">
               הפלטפורמה הכי חכמה לקנייה ומכירה בישראל — עם ניהול מחיר אוטומטי ותיאורים מושלמים
@@ -85,7 +91,7 @@ export default function Home() {
             </div>
             <button
               type="submit"
-              className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+              className="bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-violet-500/30"
             >
               חיפוש
             </button>
@@ -95,7 +101,7 @@ export default function Home() {
           <div className="flex justify-center gap-8 mt-10 animate-fadeIn">
             {stats.map((s) => (
               <div key={s.label} className="text-center">
-                <div className="text-2xl font-extrabold text-yellow-300">{s.value}</div>
+                <div className="text-2xl font-extrabold bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent">{s.value}</div>
                 <div className="text-white/60 text-xs mt-0.5">{s.label}</div>
               </div>
             ))}
@@ -182,7 +188,7 @@ export default function Home() {
       {/* ===== CTA ===== */}
       <section className="py-14 px-4 mt-6">
         <div className="max-w-3xl mx-auto bg-gradient-to-br from-slate-800 to-slate-800/50 border border-slate-700 rounded-2xl p-10 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-purple-600/10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/15 to-cyan-600/10 pointer-events-none" />
           <div className="relative z-10">
             <div className="text-4xl mb-4">🚀</div>
             <h2 className="text-3xl font-bold text-white mb-3">רוצה למכור משהו?</h2>

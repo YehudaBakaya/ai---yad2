@@ -1,32 +1,66 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
-import { authAPI } from '../services/api';
+import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { login } = useAuth();
+  const { syncUser } = useAuth();
   const from      = location.state?.from?.pathname || '/';
 
   const [form, setForm]     = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState('');
+  const [resetMode, setResetMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetMsg, setResetMsg]     = useState('');
 
   const set = (k, v) => { setForm(p => ({ ...p, [k]: v })); setError(''); };
+
+  const handleReset = async (e) => {
+    e.preventDefault();
+    if (!resetEmail) { setResetMsg('הכנס אימייל'); return; }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetMsg('✅ מייל לאיפוס נשלח — בדוק את תיבת הדואר שלך');
+    } catch {
+      setResetMsg('⚠ לא נמצא חשבון עם אימייל זה');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.email || !form.password) { setError('מלא את כל השדות'); return; }
     setLoading(true);
     try {
-      const res = await authAPI.login(form);
-      login(res.data.token, res.data.user);
+      await signInWithEmailAndPassword(auth, form.email, form.password);
+      await syncUser();
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || 'שגיאה בהתחברות');
+      const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'
+        ? 'אימייל או סיסמה שגויים'
+        : 'שגיאה בהתחברות';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      await syncUser();
+      navigate(from, { replace: true });
+    } catch {
+      setError('שגיאה בהתחברות עם Google');
     } finally {
       setLoading(false);
     }
@@ -50,11 +84,55 @@ export default function Login() {
 
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-7 shadow-xl shadow-black/30">
 
+          {/* Password Reset Mode */}
+          {resetMode ? (
+            <form onSubmit={handleReset} className="space-y-4">
+              <div className="text-center mb-2">
+                <p className="text-white font-semibold mb-1">איפוס סיסמה</p>
+                <p className="text-gray-400 text-sm">נשלח אליך מייל עם הוראות לאיפוס</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">אימייל</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={e => { setResetEmail(e.target.value); setResetMsg(''); }}
+                    placeholder="you@example.com"
+                    className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-violet-500 transition-all"
+                  />
+                </div>
+              </div>
+              {resetMsg && (
+                <div className={`rounded-xl px-4 py-2.5 text-sm ${resetMsg.startsWith('✅') ? 'bg-emerald-500/10 border border-emerald-500/40 text-emerald-400' : 'bg-red-500/10 border border-red-500/40 text-red-400'}`}>
+                  {resetMsg}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full btn-shimmer text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> שולח...</> : 'שלח מייל לאיפוס'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setResetMode(false); setResetMsg(''); }}
+                className="w-full text-gray-400 hover:text-white text-sm transition-colors"
+              >
+                חזור להתחברות
+              </button>
+            </form>
+          ) : (
+          <>
+
           {/* Google OAuth */}
           <button
             type="button"
-            onClick={authAPI.googleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 mb-5 shadow-sm"
+            onClick={handleGoogle}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 mb-5 shadow-sm disabled:opacity-60"
           >
             <GoogleIcon />
             התחבר עם Google
@@ -117,7 +195,17 @@ export default function Login() {
                 <><Sparkles size={16} /> התחבר</>
               )}
             </button>
+
+            <button
+              type="button"
+              onClick={() => setResetMode(true)}
+              className="w-full text-center text-gray-500 hover:text-gray-300 text-xs transition-colors mt-1"
+            >
+              שכחתי סיסמה
+            </button>
           </form>
+          </>
+          )}
         </div>
 
         <p className="text-center text-gray-400 text-sm mt-5">

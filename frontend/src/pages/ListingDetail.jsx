@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Phone, Mail, Star, Share2, Heart, ChevronLeft, ChevronRight, MapPin, Eye } from 'lucide-react';
+import { Lock, Star, Share2, Heart, ChevronLeft, ChevronRight, MapPin, Eye, Briefcase } from 'lucide-react';
 import AIChat from '../components/AIChat';
+import SellerDealsPanel from '../components/SellerDealsPanel';
 import PriceAnalysis from '../components/PriceAnalysis';
 import ListingCard from '../components/ListingCard';
-import { listingsAPI } from '../services/api';
+import { getListing, getSimilarListings, incrementViews } from '../services/firestoreService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ListingDetail() {
   const { id } = useParams();
+  const { isLoggedIn, user } = useAuth();
   const [listing, setListing]           = useState(null);
   const [loading, setLoading]           = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [role, setRole]                 = useState('buyer');
   const [similarListings, setSimilarListings] = useState([]);
   const [saved, setSaved]               = useState(false);
   const [heartAnim, setHeartAnim]       = useState(false);
@@ -19,10 +21,14 @@ export default function ListingDetail() {
   useEffect(() => {
     const fetchListing = async () => {
       try {
-        const response = await listingsAPI.getById(id);
-        setListing(response.data);
-        const similar = await listingsAPI.getAll({ category: response.data.categoryEn });
-        setSimilarListings(similar.data.filter((l) => l.id !== id).slice(0, 3));
+        const data = await getListing(id);
+        setListing(data);
+        // Increment view count (fire-and-forget)
+        incrementViews(id).catch(() => {});
+        if (data?.categoryEn) {
+          const similar = await getSimilarListings(data.categoryEn, id, 3);
+          setSimilarListings(similar);
+        }
       } catch (error) {
         console.error('Error fetching listing:', error);
       } finally {
@@ -62,6 +68,9 @@ export default function ListingDetail() {
     setHeartAnim(true);
     setTimeout(() => setHeartAnim(false), 300);
   };
+
+  // האם המשתמש המחובר הוא הבעלים של המוצר?
+  const isOwner = isLoggedIn && user?.id && listing.userId === user.id;
 
   return (
     <div className="min-h-screen bg-slate-900 py-8 px-4">
@@ -204,59 +213,63 @@ export default function ListingDetail() {
           {/* ===== SIDEBAR ===== */}
           <div className="space-y-4">
 
-            {/* Seller Info */}
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg shadow-black/20">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">המוכר</h3>
-              <div className="flex items-center gap-3 mb-5">
-                <img
-                  src={listing.seller.image}
-                  alt={listing.seller.name}
-                  className="w-12 h-12 rounded-full ring-2 ring-blue-500/40"
-                />
-                <div>
-                  <p className="font-bold text-white">{listing.seller.name}</p>
-                  <p className="text-xs text-gray-400">✅ מוכר מאומת</p>
+            {isOwner ? (
+              /* ── OWNER VIEW — no AI chat, show deals panel ── */
+              <>
+                <div className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4 flex items-center gap-3">
+                  <span className="text-2xl">🏠</span>
+                  <div>
+                    <p className="font-bold text-white text-sm">זה המוצר שלך</p>
+                    <p className="text-xs text-gray-400">ניהול ההצעות שקיבלת מהסוכן</p>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-2.5 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-blue-500/20">
-                  <Phone size={17} />
-                  צור קשר
-                </button>
-                <button className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
-                  <Mail size={17} />
-                  שלח הודעה
-                </button>
-              </div>
-            </div>
 
-            {/* Role selector */}
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">מצב משא ומתן</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setRole('buyer')}
-                  className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-200
-                    ${role === 'buyer'
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-[1.02]'
-                      : 'bg-slate-700 text-gray-300 hover:text-white hover:bg-slate-600'}`}
-                >
-                  🛍️ קונה
-                </button>
-                <button
-                  onClick={() => setRole('seller')}
-                  className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-200
-                    ${role === 'seller'
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30 scale-[1.02]'
-                      : 'bg-slate-700 text-gray-300 hover:text-white hover:bg-slate-600'}`}
-                >
-                  🏪 מוכר
-                </button>
-              </div>
-            </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">הצעות ממתינות לאישורך</p>
+                  </div>
+                  <SellerDealsPanel listingId={listing.id} />
+                </div>
+              </>
+            ) : (
+              /* ── BUYER VIEW — seller locked, AI chat ── */
+              <>
+                {/* Seller Info — contact locked */}
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg shadow-black/20">
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">המוכר</h3>
+                  <div className="flex items-center gap-3 mb-4">
+                    <img
+                      src={listing.seller.image}
+                      alt={listing.seller.name}
+                      className="w-12 h-12 rounded-full ring-2 ring-blue-500/40"
+                    />
+                    <div>
+                      <p className="font-bold text-white">{listing.seller.name}</p>
+                      <p className="text-xs text-gray-400">✅ מוכר מאומת</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-400">
+                    <Lock size={15} className="text-amber-400 shrink-0" />
+                    <span>פרטי ההתקשרות יוצגו לאחר אישור עסקה עם הסוכן</span>
+                  </div>
+                </div>
 
-            {/* AI Chat */}
-            <AIChat listingId={listing.id} listingPrice={listing.price} role={role} />
+                {/* AI Chat — mediator */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <Briefcase size={14} className="text-purple-400" />
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">משא ומתן עם סוכן AI</p>
+                  </div>
+                  <AIChat
+                    listingId={listing.id}
+                    listingTitle={listing.title}
+                    listingPrice={listing.price}
+                    sellerContact={listing.seller}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

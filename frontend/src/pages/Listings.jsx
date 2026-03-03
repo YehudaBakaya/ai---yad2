@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
+import { Search, Filter, X, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
-import { listingsAPI } from '../services/api';
+import { getListings } from '../services/firestoreService';
 
 const conditions = ['חדש', 'מעולה', 'טוב', 'סביר', 'דורש תיקון'];
 
@@ -20,8 +20,11 @@ const categories = [
 
 export default function Listings() {
   const [searchParams] = useSearchParams();
-  const [listings, setListings]   = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const [listings, setListings]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastDoc, setLastDoc]       = useState(null);
+  const [hasMore, setHasMore]       = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     search:   searchParams.get('search')   || '',
@@ -35,9 +38,12 @@ export default function Listings() {
   useEffect(() => {
     const fetchListings = async () => {
       setLoading(true);
+      setLastDoc(null);
       try {
-        const response = await listingsAPI.getAll(filters);
-        setListings(response.data);
+        const { results, lastDoc: ld, hasMore: more } = await getListings(filters);
+        setListings(results);
+        setLastDoc(ld);
+        setHasMore(more);
       } catch (error) {
         console.error('Error fetching listings:', error);
       } finally {
@@ -46,6 +52,21 @@ export default function Listings() {
     };
     fetchListings();
   }, [filters]);
+
+  const loadMore = async () => {
+    if (!lastDoc || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const { results, lastDoc: ld, hasMore: more } = await getListings(filters, lastDoc);
+      setListings(prev => [...prev, ...results]);
+      setLastDoc(ld);
+      setHasMore(more);
+    } catch (error) {
+      console.error('Error loading more:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleFilterChange = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -67,7 +88,7 @@ export default function Listings() {
               מודעות
               {!loading && (
                 <span className="mr-3 text-base font-normal text-gray-400">
-                  ({listings.length} תוצאות)
+                  ({listings.length}{hasMore ? '+' : ''} תוצאות)
                 </span>
               )}
             </h1>
@@ -210,11 +231,29 @@ export default function Listings() {
                 ))}
               </div>
             ) : listings.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {listings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {listings.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+
+                {hasMore && (
+                  <div className="flex justify-center mt-8">
+                    <button
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-violet-500 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-60"
+                    >
+                      {loadingMore ? (
+                        <><span className="w-4 h-4 border-2 border-gray-400/30 border-t-gray-300 rounded-full animate-spin" /> טוען...</>
+                      ) : (
+                        <><ChevronDown size={18} /> טען עוד מודעות</>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-20 animate-fadeIn">
                 <div className="text-5xl mb-4">🔍</div>

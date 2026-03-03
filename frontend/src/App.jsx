@@ -9,7 +9,8 @@ import ListingDetail from './pages/ListingDetail';
 import CreateListing from './pages/CreateListing';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import AuthCallback from './pages/AuthCallback';
+import MyListings from './pages/MyListings';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -24,11 +25,16 @@ function App() {
             <Route path="/listings/:id"  element={<ListingDetail />} />
             <Route path="/login"         element={<Login />} />
             <Route path="/register"      element={<Register />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* ── Protected ── */}
             <Route path="/create" element={
               <ProtectedRoute><CreateListing /></ProtectedRoute>
+            } />
+            <Route path="/my-listings" element={
+              <ProtectedRoute><MyListings /></ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute><Profile /></ProtectedRoute>
             } />
           </Routes>
         </div>

@@ -1,36 +1,53 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authAPI } from '../services/api';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '../firebase';
+import { getUserProfile } from '../services/firestoreService';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
-  const [loading, setLoading] = useState(true); // בדיקת session ראשונית
+  const [loading, setLoading] = useState(true);
 
-  // בדיקת token קיים בטעינה
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) { setLoading(false); return; }
-
-    authAPI.me()
-      .then(res => setUser(res.data.user))
-      .catch(() => localStorage.removeItem('token'))
-      .finally(() => setLoading(false));
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const profile = await getUserProfile(firebaseUser.uid).catch(() => null);
+        setUser({
+          id:     firebaseUser.uid,
+          name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
+          email:  firebaseUser.email,
+          phone:  profile?.phone || null,
+          avatar: firebaseUser.photoURL || null,
+        });
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+    return unsubscribe;
   }, []);
 
-  const login = useCallback((token, userData) => {
-    localStorage.setItem('token', token);
-    setUser(userData);
+  // קריאה מיידית ל-auth.currentUser (אחרי sign-in, לפני שonAuthStateChanged מספיק להתעדכן)
+  const syncUser = useCallback(async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    const profile = await getUserProfile(firebaseUser.uid).catch(() => null);
+    setUser({
+      id:     firebaseUser.uid,
+      name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
+      email:  firebaseUser.email,
+      phone:  profile?.phone || null,
+      avatar: firebaseUser.photoURL || null,
+    });
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    setUser(null);
-    authAPI.logout().catch(() => {}); // best-effort
+  const logout = useCallback(async () => {
+    await signOut(auth);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isLoggedIn: !!user }}>
+    <AuthContext.Provider value={{ user, loading, logout, syncUser, isLoggedIn: !!user }}>
       {children}
     </AuthContext.Provider>
   );

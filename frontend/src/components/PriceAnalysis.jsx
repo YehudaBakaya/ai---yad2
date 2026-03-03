@@ -1,127 +1,168 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingDown, TrendingUp, Minus, AlertCircle } from 'lucide-react';
 import { aiAPI } from '../services/api';
 
 export default function PriceAnalysis({ title, category, price, condition }) {
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
 
   useEffect(() => {
-    const analyzePrice = async () => {
-      try {
-        const response = await aiAPI.analyzePrice({
-          title,
-          category,
-          price,
-          condition
-        });
-        setAnalysis(response.data);
-      } catch (err) {
-        console.error('Price analysis error:', err);
-        setError('לא הצלחנו לנתח את המחיר');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    analyzePrice();
+    setLoading(true);
+    setError(null);
+    aiAPI.analyzePrice({ title, category, price, condition })
+      .then(r => setAnalysis(r.data))
+      .catch(() => setError('לא הצלחנו לנתח את המחיר'))
+      .finally(() => setLoading(false));
   }, [title, category, price, condition]);
 
   if (loading) {
     return (
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-slate-700 rounded w-1/3"></div>
-          <div className="h-12 bg-slate-700 rounded"></div>
-        </div>
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 animate-pulse space-y-4">
+        <div className="h-5 bg-slate-700 rounded w-1/3" />
+        <div className="h-16 bg-slate-700 rounded-xl" />
+        <div className="h-8 bg-slate-700 rounded" />
       </div>
     );
   }
 
   if (error || !analysis) {
     return (
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <p className="text-red-400">{error}</p>
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex items-center gap-3 text-red-400">
+        <AlertCircle size={18} />
+        <span className="text-sm">{error}</span>
       </div>
     );
   }
 
-  const verdictColor = {
-    'עסקה טובה': 'border-green-500 bg-green-900/20',
-    'מחיר הוגן': 'border-blue-500 bg-blue-900/20',
-    'קצת יקר': 'border-yellow-500 bg-yellow-900/20',
-    'יקר מדי': 'border-red-500 bg-red-900/20'
-  };
+  const { verdict, explanation, market, positionPct = 50, confidence, matchedItem, recommendation } = analysis;
 
-  const verdictIcon = {
-    'עסקה טובה': <TrendingDown className="text-green-400" size={24} />,
-    'מחיר הוגן': <Minus className="text-blue-400" size={24} />,
-    'קצת יקר': <TrendingUp className="text-yellow-400" size={24} />,
-    'יקר מדי': <TrendingUp className="text-red-400" size={24} />
+  const config = {
+    'עסקה טובה': {
+      border: 'border-blue-500/50',
+      bg:     'bg-blue-500/10',
+      badge:  'bg-blue-500/20 text-blue-300 border-blue-500/40',
+      icon:   <TrendingDown size={18} className="text-blue-400" />,
+      dot:    'bg-blue-500',
+      label:  'text-blue-300',
+    },
+    'מחיר הוגן': {
+      border: 'border-emerald-500/50',
+      bg:     'bg-emerald-500/10',
+      badge:  'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      icon:   <Minus size={18} className="text-emerald-400" />,
+      dot:    'bg-emerald-500',
+      label:  'text-emerald-300',
+    },
+    'קצת יקר': {
+      border: 'border-amber-500/50',
+      bg:     'bg-amber-500/10',
+      badge:  'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      icon:   <TrendingUp size={18} className="text-amber-400" />,
+      dot:    'bg-amber-500',
+      label:  'text-amber-300',
+    },
+    'יקר מדי': {
+      border: 'border-red-500/50',
+      bg:     'bg-red-500/10',
+      badge:  'bg-red-500/20 text-red-300 border-red-500/40',
+      icon:   <TrendingUp size={18} className="text-red-400" />,
+      dot:    'bg-red-500',
+      label:  'text-red-300',
+    },
   };
+  const c = config[verdict] || config['מחיר הוגן'];
+
+  // Clamp for display
+  const dotLeft = Math.min(95, Math.max(5, positionPct));
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-      <h3 className="text-xl font-bold text-white mb-6">📊 ניתוח מחיר בשוק</h3>
+    <div className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-lg shadow-black/20">
 
-      {/* Verdict */}
-      <div className={`border-l-4 rounded-lg p-4 mb-6 ${verdictColor[analysis.verdict] || verdictColor['מחיר הוגן']}`}>
-        <div className="flex items-center gap-3 mb-2">
-          {verdictIcon[analysis.verdict]}
-          <span className="text-2xl font-bold text-white">{analysis.verdict}</span>
-        </div>
-        <p className="text-gray-300">{analysis.explanation}</p>
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
+        <h3 className="font-bold text-white flex items-center gap-2">
+          <span>📊</span> ניתוח מחיר בשוק
+        </h3>
+        {matchedItem && (
+          <span className="text-xs text-gray-500 bg-slate-700 px-2 py-0.5 rounded-full truncate max-w-36">
+            {matchedItem}
+          </span>
+        )}
       </div>
 
-      {/* Market Data */}
-      <div className="mb-6">
-        <h4 className="text-sm font-bold text-gray-400 mb-4">טווח המחירים בשוק</h4>
-        
-        <div className="space-y-3">
-          {/* Min */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">מחיר מינימלי</span>
-            <span className="font-bold text-white">₪{analysis.market.min.toLocaleString()}</span>
-          </div>
-          
-          {/* Average */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">מחיר ממוצע</span>
-            <span className="font-bold text-blue-400">₪{analysis.market.avg.toLocaleString()}</span>
-          </div>
-          
-          {/* Max */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">מחיר מקסימלי</span>
-            <span className="font-bold text-white">₪{analysis.market.max.toLocaleString()}</span>
+      <div className="p-5 space-y-5">
+
+        {/* Verdict card */}
+        <div className={`flex items-start gap-3 rounded-xl border p-4 ${c.border} ${c.bg}`}>
+          <div className="shrink-0 mt-0.5">{c.icon}</div>
+          <div>
+            <span className={`font-extrabold text-base ${c.label}`}>{verdict}</span>
+            <p className="text-gray-300 text-sm mt-1 leading-relaxed">{explanation}</p>
           </div>
         </div>
 
-        {/* Price Bar */}
-        <div className="mt-4 bg-slate-700 rounded-full h-2 overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-green-500 via-blue-500 to-red-500"
-            style={{
-              width: '100%'
-            }}
-          ></div>
-        </div>
-      </div>
+        {/* Range bar */}
+        <div>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">טווח מחירים בשוק</p>
 
-      {/* Your Price Indicator */}
-      <div className="bg-slate-700 rounded-lg p-3">
-        <div className="text-sm text-gray-400 mb-1">המחיר שלך</div>
-        <div className="text-2xl font-bold text-white">₪{price.toLocaleString()}</div>
-        <div className="text-xs text-gray-500 mt-1">
-          {analysis.recommendation === 'raise' && '👆 שקול הגדלה'}
-          {analysis.recommendation === 'lower' && '👇 שקול הנמכה'}
-          {analysis.recommendation === 'keep' && '✅ המחיר טוב'}
-        </div>
-      </div>
+          {/* Three-column labels */}
+          <div className="flex justify-between text-xs font-medium mb-1.5">
+            <span className="text-emerald-400">₪{market.min.toLocaleString()}</span>
+            <span className="text-blue-400">ממוצע ₪{market.avg.toLocaleString()}</span>
+            <span className="text-red-400">₪{market.max.toLocaleString()}</span>
+          </div>
 
-      <div className="mt-4 text-xs text-gray-500">
-        ניתוח AI עם דיוק של {Math.round(analysis.confidence * 100)}%
+          {/* Gradient bar + user price dot */}
+          <div className="relative h-3 bg-slate-700 rounded-full overflow-visible">
+            {/* Gradient track */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-500 via-blue-500 to-red-500 opacity-60" />
+
+            {/* Average marker */}
+            <div className="absolute top-0 bottom-0 w-0.5 bg-white/30" style={{ left: `${Math.round((market.avg - market.min) / (market.max - market.min) * 100)}%` }} />
+
+            {/* User price dot */}
+            <div
+              className={`absolute -top-1 w-5 h-5 rounded-full border-2 border-white shadow-lg ${c.dot} transition-all duration-700`}
+              style={{ left: `calc(${dotLeft}% - 10px)` }}
+              title={`המחיר שלך: ₪${Number(price).toLocaleString()}`}
+            />
+          </div>
+
+          {/* User price label below dot */}
+          <div className="relative h-6 mt-1">
+            <div
+              className={`absolute text-xs font-bold ${c.label} -translate-x-1/2 whitespace-nowrap`}
+              style={{ left: `${dotLeft}%` }}
+            >
+              ₪{Number(price).toLocaleString()} ← שלך
+            </div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3 text-center">
+          {[
+            { label: 'מינימום',  val: market.min, cls: 'text-emerald-400' },
+            { label: 'ממוצע',    val: market.avg, cls: 'text-blue-400' },
+            { label: 'מקסימום', val: market.max, cls: 'text-red-400' },
+          ].map(({ label, val, cls }) => (
+            <div key={label} className="bg-slate-700/60 border border-slate-600 rounded-xl py-2.5">
+              <div className={`font-extrabold text-sm ${cls}`}>₪{val.toLocaleString()}</div>
+              <div className="text-gray-500 text-[10px] mt-0.5">{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>
+            {recommendation === 'raise' && '💡 שקול להעלות את המחיר'}
+            {recommendation === 'lower' && '💡 שקול להוריד את המחיר'}
+            {recommendation === 'keep'  && '✅ המחיר מתאים לשוק'}
+          </span>
+          <span>דיוק {confidence}%</span>
+        </div>
       </div>
     </div>
   );
