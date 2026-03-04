@@ -2,8 +2,21 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { getUserProfile } from '../services/firestoreService';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
+
+// Sync Firebase user to MongoDB in the background
+const syncToMongo = (firebaseUser, phone = null) => {
+  if (!firebaseUser) return;
+  authAPI.firebaseSync({
+    uid:    firebaseUser.uid,
+    name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
+    email:  firebaseUser.email,
+    avatar: firebaseUser.photoURL || null,
+    phone:  phone || null,
+  }).catch(() => {});
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
@@ -20,14 +33,15 @@ export function AuthProvider({ children }) {
           phone:  null,
           avatar: firebaseUser.photoURL || null,
         });
-        // Fetch phone number in background (non-blocking)
+        // Fetch phone + sync to MongoDB in background (non-blocking)
         getUserProfile(firebaseUser.uid)
           .then((profile) => {
             if (profile?.phone) {
               setUser(prev => prev ? { ...prev, phone: profile.phone } : prev);
             }
+            syncToMongo(firebaseUser, profile?.phone || null);
           })
-          .catch(() => {});
+          .catch(() => { syncToMongo(firebaseUser); });
       } else {
         setUser(null);
       }
@@ -36,18 +50,20 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  // קריאה מיידית אחרי sign-in — מקבל את firebaseUser ישירות (לא מסתמך על auth.currentUser)
+  // Called directly after sign-in/register with the Firebase user object
   const syncUser = useCallback(async (firebaseUser) => {
     const u = firebaseUser || auth.currentUser;
     if (!u) return;
     const profile = await getUserProfile(u.uid).catch(() => null);
-    setUser({
+    const userData = {
       id:     u.uid,
       name:   u.displayName || u.email?.split('@')[0] || 'משתמש',
       email:  u.email,
       phone:  profile?.phone || null,
       avatar: u.photoURL || null,
-    });
+    };
+    setUser(userData);
+    syncToMongo(u, userData.phone);
   }, []);
 
   const logout = useCallback(async () => {

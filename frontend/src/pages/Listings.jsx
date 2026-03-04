@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Filter, X, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
-import { getListings } from '../services/firestoreService';
+import { listingsAPI } from '../services/api';
 
 const conditions = ['חדש', 'מעולה', 'טוב', 'סביר', 'דורש תיקון'];
 
@@ -18,80 +18,56 @@ const categories = [
   { id: 'services',   name: 'שירותים',       icon: '🔧' },
 ];
 
-const CACHE_TTL   = 3 * 60 * 1000; // 3 minutes
-const cacheKey    = (cat) => `yad2_listings_${cat || 'all'}_v2`;
-const toCache     = (items) => items.map(l => ({ ...l, date: l.date?.toMillis?.() ?? l.date ?? null }));
-const hasTextFilters = (f) => !!(f.search || f.minPrice || f.maxPrice || f.location || f.condition);
+const CACHE_TTL = 3 * 60 * 1000;
+const cacheKey  = (cat) => `yad2_listings_${cat || 'all'}_v3`;
 
 export default function Listings() {
   const [searchParams] = useSearchParams();
-  const [listings, setListings]     = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [lastDoc, setLastDoc]       = useState(null);
-  const [hasMore, setHasMore]       = useState(false);
+  const [listings, setListings]       = useState([]);
+  const [loading, setLoading]         = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
-    search:   searchParams.get('search')   || '',
-    category: searchParams.get('category') || '',
-    minPrice: searchParams.get('minPrice') || '',
-    maxPrice: searchParams.get('maxPrice') || '',
-    location: searchParams.get('location') || '',
+    search:    searchParams.get('search')    || '',
+    category:  searchParams.get('category')  || '',
+    minPrice:  searchParams.get('minPrice')  || '',
+    maxPrice:  searchParams.get('maxPrice')  || '',
+    location:  searchParams.get('location')  || '',
     condition: searchParams.get('condition') || '',
   });
 
   useEffect(() => {
-    setLastDoc(null);
-    const noText = !hasTextFilters(filters);
+    const noText = !(filters.search || filters.minPrice || filters.maxPrice || filters.location || filters.condition);
 
-    // 1. Show cached data immediately if no text filters
+    // Show cached data immediately (no-text filters only)
     if (noText) {
       try {
         const raw = JSON.parse(localStorage.getItem(cacheKey(filters.category)) || 'null');
         if (raw?.ts && Date.now() - raw.ts < CACHE_TTL && raw.data?.length) {
           setListings(raw.data);
-          setHasMore(raw.hasMore ?? false);
           setLoading(false);
         }
       } catch {}
     }
 
-    // 2. Fetch fresh from Firestore
-    const fetchListings = async () => {
-      try {
-        const { results, lastDoc: ld, hasMore: more } = await getListings(filters);
-        setListings(results);
-        setLastDoc(ld);
-        setHasMore(more);
-        // Cache only non-text results
-        if (noText) {
-          localStorage.setItem(cacheKey(filters.category), JSON.stringify({
-            ts: Date.now(), data: toCache(results), hasMore: more,
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching listings:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchListings();
-  }, [filters]);
+    // Fetch fresh from MongoDB backend
+    const params = {};
+    if (filters.category)  params.category  = filters.category;
+    if (filters.search)    params.search     = filters.search;
+    if (filters.minPrice)  params.minPrice   = filters.minPrice;
+    if (filters.maxPrice)  params.maxPrice   = filters.maxPrice;
+    if (filters.location)  params.location   = filters.location;
+    if (filters.condition) params.condition  = filters.condition;
 
-  const loadMore = async () => {
-    if (!lastDoc || loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const { results, lastDoc: ld, hasMore: more } = await getListings(filters, lastDoc);
-      setListings(prev => [...prev, ...results]);
-      setLastDoc(ld);
-      setHasMore(more);
-    } catch (error) {
-      console.error('Error loading more:', error);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
+    listingsAPI.getAll(params)
+      .then(({ data }) => {
+        setListings(data);
+        if (noText) {
+          localStorage.setItem(cacheKey(filters.category), JSON.stringify({ ts: Date.now(), data }));
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [filters]);
 
   const handleFilterChange = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -113,7 +89,7 @@ export default function Listings() {
               מודעות
               {!loading && (
                 <span className="mr-3 text-base font-normal text-gray-400">
-                  ({listings.length}{hasMore ? '+' : ''} תוצאות)
+                  ({listings.length} תוצאות)
                 </span>
               )}
             </h1>
@@ -263,21 +239,6 @@ export default function Listings() {
                   ))}
                 </div>
 
-                {hasMore && (
-                  <div className="flex justify-center mt-8">
-                    <button
-                      onClick={loadMore}
-                      disabled={loadingMore}
-                      className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-violet-500 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-60"
-                    >
-                      {loadingMore ? (
-                        <><span className="w-4 h-4 border-2 border-gray-400/30 border-t-gray-300 rounded-full animate-spin" /> טוען...</>
-                      ) : (
-                        <><ChevronDown size={18} /> טען עוד מודעות</>
-                      )}
-                    </button>
-                  </div>
-                )}
               </>
             ) : (
               <div className="text-center py-20 animate-fadeIn">

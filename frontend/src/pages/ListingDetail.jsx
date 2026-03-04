@@ -5,7 +5,7 @@ import AIChat from '../components/AIChat';
 import SellerDealsPanel from '../components/SellerDealsPanel';
 import PriceAnalysis from '../components/PriceAnalysis';
 import ListingCard from '../components/ListingCard';
-import { getListing, getSimilarListings, incrementViews } from '../services/firestoreService';
+import { listingsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ListingDetail() {
@@ -21,13 +21,11 @@ export default function ListingDetail() {
   useEffect(() => {
     const fetchListing = async () => {
       try {
-        const data = await getListing(id);
+        const { data } = await listingsAPI.getOne(id);
         setListing(data);
-        // Increment view count (fire-and-forget)
-        incrementViews(id).catch(() => {});
         if (data?.categoryEn) {
-          const similar = await getSimilarListings(data.categoryEn, id, 3);
-          setSimilarListings(similar);
+          const { data: allSimilar } = await listingsAPI.getAll({ category: data.categoryEn });
+          setSimilarListings(allSimilar.filter(l => l.id !== id).slice(0, 3));
         }
       } catch (error) {
         console.error('Error fetching listing:', error);

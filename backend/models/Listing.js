@@ -53,6 +53,7 @@ const listingSchema = new mongoose.Schema({
 
   views:  { type: Number, default: 0 },
   rating: { type: Number, default: null, min: 0, max: 5 },
+  userId:   { type: String, default: null },   // Firebase UID of owner
   isActive: { type: Boolean, default: true },
 }, {
   timestamps: true,

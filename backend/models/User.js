@@ -9,7 +9,14 @@ const userSchema = new mongoose.Schema({
   googleId: {
     type: String,
     unique: true,
-    sparse: true, // מאפשר null לאלה שנרשמו עם email
+    sparse: true,
+  },
+
+  // Firebase Auth UID
+  firebaseUid: {
+    type: String,
+    unique: true,
+    sparse: true,
   },
 
   // פרטים בסיסיים

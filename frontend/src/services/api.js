@@ -15,4 +15,20 @@ export const aiAPI = {
   getRecommendations:  (data) => api.post('/ai/recommendations', data),
 };
 
+// ── Listings API (MongoDB via Express) ──────────────────────────────────────
+export const listingsAPI = {
+  getAll:    (params = {})   => api.get('/listings', { params }),
+  getOne:    (id)            => api.get(`/listings/${id}`),
+  getByUser: (userId)        => api.get('/listings', { params: { userId } }),
+  create:    (data)          => api.post('/listings', data),
+  update:    (id, data)      => api.put(`/listings/${id}`, data),
+  remove:    (id)            => api.delete(`/listings/${id}`),
+  categories: ()             => api.get('/listings/categories/all'),
+};
+
+// ── Auth API (MongoDB sync) ──────────────────────────────────────────────────
+export const authAPI = {
+  firebaseSync: (data) => api.post('/auth/firebase-sync', data),
+};
+
 export default api;

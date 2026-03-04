@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Tag, TrendingUp, Plus, Clock, CheckCircle, XCircle, ChevronLeft, Pencil, Trash2, X, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getMyListings, subscribeToListingDeals, deleteListing, updateListing } from '../services/firestoreService';
+import { subscribeToListingDeals } from '../services/firestoreService';
+import { listingsAPI } from '../services/api';
 
 // ── Hook: real-time deal counts per listing ──────────────────────────────────
 function useListingDeals(listingId) {
@@ -32,7 +33,7 @@ function EditModal({ listing, onClose, onSaved }) {
     if (!form.title.trim()) { setError('כותרת חובה'); return; }
     setSaving(true);
     try {
-      await updateListing(listing.id, {
+      await listingsAPI.update(listing.id, {
         title:       form.title.trim(),
         price:       parseFloat(form.price) || 0,
         location:    form.location.trim(),
@@ -154,7 +155,7 @@ function DeleteConfirm({ listing, onClose, onDeleted }) {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await deleteListing(listing.id);
+      await listingsAPI.remove(listing.id);
       onDeleted(listing.id);
     } catch {
       alert('שגיאה במחיקה. נסה שוב.');
@@ -307,8 +308,8 @@ export default function MyListings() {
 
   useEffect(() => {
     if (!user?.id) return;
-    getMyListings(user.id)
-      .then(setListings)
+    listingsAPI.getByUser(user.id)
+      .then(({ data }) => setListings(data))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [user?.id]);

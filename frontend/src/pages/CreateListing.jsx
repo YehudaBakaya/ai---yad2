@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight, MapPin, Tag, FileText, Bot, Sparkles, X, Upload } from 'lucide-react';
 import SmartDescription from '../components/SmartDescription';
 import SellerInterview from '../components/SellerInterview';
-import { createListing } from '../services/firestoreService';
+import { uploadImage } from '../services/firestoreService';
+import { listingsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const categories = [
@@ -94,16 +95,32 @@ export default function CreateListing() {
     if (!validateStep()) return;
     setLoading(true);
     try {
-      const imageUrls = images.map(img => img.dataUrl);
-      await createListing(
-        {
-          ...formData,
-          price: parseFloat(formData.price),
-          images: imageUrls.length > 0 ? imageUrls : [],
-          sellerNotes: sellerNotes || null,
-        },
-        user
-      );
+      // Try uploading images to Firebase Storage (best effort)
+      let imageUrls = [];
+      if (images.length > 0) {
+        try {
+          imageUrls = await Promise.all(
+            images.map((img, i) => uploadImage(img.dataUrl, `listings/${Date.now()}_${i}`))
+          );
+        } catch {
+          // Storage not available — listing saved without images
+        }
+      }
+
+      await listingsAPI.create({
+        ...formData,
+        price: parseFloat(formData.price),
+        images: imageUrls,
+        sellerNotes: sellerNotes || null,
+        userId: user?.id || null,
+        seller: user ? {
+          id:    user.id,
+          name:  user.name,
+          phone: user.phone || null,
+          email: user.email || null,
+          image: user.avatar || `https://i.pravatar.cc/150?u=${user.id}`,
+        } : null,
+      });
       setSuccess(true);
       setTimeout(() => navigate('/listings'), 2000);
     } catch {

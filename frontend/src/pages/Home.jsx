@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, TrendingUp, Zap, ArrowLeft } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
-import { getListings, seedDemoListings } from '../services/firestoreService';
+import { listingsAPI } from '../services/api';
 
 const categories = [
   { id: 'real_estate', name: 'נדל"ן',     icon: '🏠', color: 'from-blue-600 to-blue-800' },
@@ -21,8 +21,7 @@ const stats = [
   { label: 'עסקאות הושלמו', value: '94,000+' },
 ];
 
-const FEATURED_CACHE = 'yad2_featured_v2';
-const toCache = (items) => items.map(l => ({ ...l, date: l.date?.toMillis?.() ?? l.date ?? null }));
+const FEATURED_CACHE = 'yad2_featured_v3';
 
 export default function Home() {
   const [listings, setListings]     = useState([]);
@@ -31,40 +30,21 @@ export default function Home() {
   const [hoveredCat, setHoveredCat] = useState(null);
 
   useEffect(() => {
-    // 1. Show cached data immediately (stale-while-revalidate)
+    // Show cached data immediately (stale-while-revalidate)
     try {
       const cached = JSON.parse(localStorage.getItem(FEATURED_CACHE) || 'null');
-      if (cached?.length) {
-        setListings(cached);
-        setLoading(false);
-      }
+      if (cached?.length) { setListings(cached); setLoading(false); }
     } catch {}
 
-    // 2. Fetch fresh from Firestore in background
-    const fetchFresh = async () => {
-      try {
-        // Fetch immediately — don't block on seeding
-        const { results } = await getListings();
-        const fresh = results.slice(0, 6);
+    // Fetch fresh from MongoDB backend
+    listingsAPI.getAll()
+      .then(({ data }) => {
+        const fresh = data.slice(0, 6);
         setListings(fresh);
-        localStorage.setItem(FEATURED_CACHE, JSON.stringify(toCache(fresh)));
-
-        // If empty and not yet seeded — seed in background then re-fetch
-        if (fresh.length === 0 && !localStorage.getItem('yad2_seeded')) {
-          localStorage.setItem('yad2_seeded', '1');
-          await seedDemoListings();
-          const { results: seeded } = await getListings();
-          const seededFresh = seeded.slice(0, 6);
-          setListings(seededFresh);
-          localStorage.setItem(FEATURED_CACHE, JSON.stringify(toCache(seededFresh)));
-        }
-      } catch (error) {
-        console.error('Error fetching listings:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFresh();
+        localStorage.setItem(FEATURED_CACHE, JSON.stringify(fresh));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSearch = (e) => {

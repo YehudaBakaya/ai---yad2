@@ -137,6 +137,53 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
+// ── POST /api/auth/firebase-sync ──────────────────────────────────────────────
+// Called from frontend after Firebase sign-in to sync user into MongoDB
+router.post('/firebase-sync', async (req, res) => {
+  try {
+    const { uid, name, email, avatar, phone } = req.body;
+    if (!uid || !email)
+      return res.status(400).json({ error: 'uid ו-email נדרשים' });
+
+    if (isConnected()) {
+      let user = await User.findOne({ firebaseUid: uid });
+      if (!user) {
+        user = await User.findOne({ email: email.toLowerCase() });
+        if (user) {
+          user.firebaseUid = uid;
+          if (avatar && !user.avatar) user.avatar = avatar;
+        } else {
+          user = new User({
+            firebaseUid: uid,
+            name: name || email.split('@')[0],
+            email: email.toLowerCase(),
+            avatar: avatar || null,
+            phone: phone || null,
+            provider: 'google',
+          });
+        }
+      } else {
+        if (name)   user.name   = name;
+        if (avatar) user.avatar = avatar;
+        if (phone)  user.phone  = phone;
+      }
+      await user.save();
+      return res.json({ user: safeUser(user) });
+    }
+
+    // in-memory fallback
+    let u = inMemory.find(u => u.firebaseUid === uid || u.email === email.toLowerCase());
+    if (!u) {
+      u = { id: uid, firebaseUid: uid, name: name || email.split('@')[0], email: email.toLowerCase(), avatar: avatar || null, phone: phone || null, provider: 'google' };
+      inMemory.push(u);
+    }
+    res.json({ user: safeUser(u) });
+  } catch (err) {
+    console.error('Firebase sync error:', err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 // ── POST /api/auth/logout ──────────────────────────────────────────────────────
 router.post('/logout', (req, res) => {
   req.logout?.();

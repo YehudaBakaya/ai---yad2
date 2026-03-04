@@ -23,6 +23,7 @@ router.get('/', async (req, res) => {
       if (req.query.category)  query.categoryEn = req.query.category;
       if (req.query.condition) query.condition   = req.query.condition;
       if (req.query.location)  query.location    = new RegExp(req.query.location, 'i');
+      if (req.query.userId)    query.userId      = req.query.userId;
 
       if (req.query.minPrice || req.query.maxPrice) {
         query.price = {};
@@ -33,7 +34,6 @@ router.get('/', async (req, res) => {
       let dbQuery = Listing.find(query).sort({ createdAt: -1 });
 
       if (req.query.search) {
-        // Use text index when available, fallback to regex
         try {
           dbQuery = Listing.find({ ...query, $text: { $search: req.query.search } })
             .sort({ score: { $meta: 'textScore' }, createdAt: -1 });
@@ -55,6 +55,7 @@ router.get('/', async (req, res) => {
     if (req.query.location)  filtered = filtered.filter(l => l.location.toLowerCase().includes(req.query.location.toLowerCase()));
     if (req.query.minPrice)  filtered = filtered.filter(l => l.price >= parseFloat(req.query.minPrice));
     if (req.query.maxPrice)  filtered = filtered.filter(l => l.price <= parseFloat(req.query.maxPrice));
+    if (req.query.userId)    filtered = filtered.filter(l => l.userId === req.query.userId);
     if (req.query.search) {
       const s = req.query.search.toLowerCase();
       filtered = filtered.filter(l => l.title.toLowerCase().includes(s) || l.description.toLowerCase().includes(s));
@@ -112,7 +113,7 @@ router.get('/:id', async (req, res) => {
 // ── POST /api/listings ────────────────────────────────────────────────────────
 router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { title, category, price, location, condition, description, images, sellerNotes } = req.body;
+    const { title, category, price, location, condition, description, images, sellerNotes, userId: bodyUserId, seller: bodySeller } = req.body;
 
     if (!title || !category || price === undefined)
       return res.status(400).json({ error: 'נתונים חסרים' });
@@ -121,9 +122,14 @@ router.post('/', optionalAuth, async (req, res) => {
       || Object.entries(categories).find(([key]) => key === category)?.[1]
       || category;
 
+    // Auth priority: JWT user > body seller info > anonymous
     const seller = req.user
       ? { id: req.user.id, name: req.user.name, phone: req.user.phone || null, email: req.user.email || null, image: `https://i.pravatar.cc/150?u=${req.user.id}` }
-      : { name: 'משתמש אנונימי', phone: null, email: null, image: 'https://i.pravatar.cc/150?img=50' };
+      : bodySeller
+        ? { id: bodySeller.id || null, name: bodySeller.name || 'משתמש', phone: bodySeller.phone || null, email: bodySeller.email || null, image: bodySeller.image || `https://i.pravatar.cc/150?u=${bodySeller.id || 'anon'}` }
+        : { name: 'משתמש אנונימי', phone: null, email: null, image: 'https://i.pravatar.cc/150?img=50' };
+
+    const userId = req.user?.id || bodyUserId || null;
 
     if (isConnected()) {
       const doc = await Listing.create({
@@ -132,8 +138,8 @@ router.post('/', optionalAuth, async (req, res) => {
         price: parseFloat(price),
         location: location || 'לא צוין',
         condition: condition || 'טוב',
-        images: images || ['https://images.unsplash.com/photo-1540932954986-b06535f787f6?w=600'],
-        seller,
+        images: images?.length > 0 ? images : ['https://images.unsplash.com/photo-1540932954986-b06535f787f6?w=600'],
+        seller, userId,
         views: 0, rating: 4.5,
       });
       return res.status(201).json(toPlain(doc));
@@ -146,15 +152,56 @@ router.post('/', optionalAuth, async (req, res) => {
       location: location || 'לא צוין',
       condition: condition || 'טוב',
       sellerNotes: sellerNotes || null,
-      userId: req.user?.id || null,
-      seller,
-      images: images || ['https://images.unsplash.com/photo-1540932954986-b06535f787f6?w=600'],
+      userId, seller,
+      images: images?.length > 0 ? images : ['https://images.unsplash.com/photo-1540932954986-b06535f787f6?w=600'],
       date: new Date(), views: 0, rating: 4.5,
     };
     inMemory.push(newListing);
     res.status(201).json(newListing);
   } catch (err) {
     console.error('POST /listings error:', err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+// ── PUT /api/listings/:id ─────────────────────────────────────────────────────
+router.put('/:id', optionalAuth, async (req, res) => {
+  try {
+    const allowed = ['title', 'price', 'location', 'condition', 'description', 'images'];
+    const updates = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+
+    if (isConnected()) {
+      const doc = await Listing.findByIdAndUpdate(req.params.id, updates, { new: true });
+      if (!doc) return res.status(404).json({ error: 'רישום לא נמצא' });
+      return res.json(toPlain(doc));
+    }
+
+    const idx = inMemory.findIndex(l => l.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'רישום לא נמצא' });
+    inMemory[idx] = { ...inMemory[idx], ...updates };
+    res.json(inMemory[idx]);
+  } catch (err) {
+    console.error('PUT /listings/:id error:', err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+// ── DELETE /api/listings/:id ──────────────────────────────────────────────────
+router.delete('/:id', optionalAuth, async (req, res) => {
+  try {
+    if (isConnected()) {
+      const doc = await Listing.findByIdAndDelete(req.params.id);
+      if (!doc) return res.status(404).json({ error: 'רישום לא נמצא' });
+      return res.json({ success: true });
+    }
+
+    const idx = inMemory.findIndex(l => l.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'רישום לא נמצא' });
+    inMemory.splice(idx, 1);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /listings/:id error:', err);
     res.status(500).json({ error: 'שגיאת שרת' });
   }
 });
