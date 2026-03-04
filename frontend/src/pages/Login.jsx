@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
-import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  signInWithRedirect,
+  getRedirectResult,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,7 +14,7 @@ export default function Login() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { syncUser } = useAuth();
-  const from      = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/';
 
   const [form, setForm]     = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
@@ -18,6 +23,24 @@ export default function Login() {
   const [resetMode, setResetMode] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetMsg, setResetMsg]     = useState('');
+
+  // Handle redirect result from Google OAuth (after page reload back from Google)
+  useEffect(() => {
+    setLoading(true);
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          await syncUser();
+          navigate(from, { replace: true });
+        }
+      })
+      .catch((err) => {
+        if (err.code === 'auth/unauthorized-domain') {
+          setError('הדומיין לא מאושר — הוסף ל-Firebase Console → Auth → Authorized Domains');
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line
 
   const set = (k, v) => { setForm(p => ({ ...p, [k]: v })); setError(''); };
 
@@ -56,12 +79,10 @@ export default function Login() {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      await syncUser();
-      navigate(from, { replace: true });
+      // Redirect flow — page reloads after Google auth, result handled in useEffect above
+      await signInWithRedirect(auth, googleProvider);
     } catch {
       setError('שגיאה בהתחברות עם Google');
-    } finally {
       setLoading(false);
     }
   };
@@ -134,7 +155,9 @@ export default function Login() {
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 mb-5 shadow-sm disabled:opacity-60"
           >
-            <GoogleIcon />
+            {loading
+              ? <span className="w-4 h-4 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" />
+              : <GoogleIcon />}
             התחבר עם Google
           </button>
 

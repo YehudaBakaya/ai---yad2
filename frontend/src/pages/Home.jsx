@@ -21,6 +21,9 @@ const stats = [
   { label: 'עסקאות הושלמו', value: '94,000+' },
 ];
 
+const FEATURED_CACHE = 'yad2_featured_v2';
+const toCache = (items) => items.map(l => ({ ...l, date: l.date?.toMillis?.() ?? l.date ?? null }));
+
 export default function Home() {
   const [listings, setListings]     = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -28,22 +31,33 @@ export default function Home() {
   const [hoveredCat, setHoveredCat] = useState(null);
 
   useEffect(() => {
-    const fetchListings = async () => {
+    // 1. Show cached data immediately (stale-while-revalidate)
+    try {
+      const cached = JSON.parse(localStorage.getItem(FEATURED_CACHE) || 'null');
+      if (cached?.length) {
+        setListings(cached);
+        setLoading(false);
+      }
+    } catch {}
+
+    // 2. Fetch fresh from Firestore in background
+    const fetchFresh = async () => {
       try {
-        // Seed only once per browser — avoids an extra Firestore read on every visit
         if (!localStorage.getItem('yad2_seeded')) {
           await seedDemoListings();
           localStorage.setItem('yad2_seeded', '1');
         }
         const { results } = await getListings();
-        setListings(results.slice(0, 6));
+        const fresh = results.slice(0, 6);
+        setListings(fresh);
+        localStorage.setItem(FEATURED_CACHE, JSON.stringify(toCache(fresh)));
       } catch (error) {
         console.error('Error fetching listings:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchListings();
+    fetchFresh();
   }, []);
 
   const handleSearch = (e) => {

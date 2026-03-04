@@ -1,6 +1,7 @@
 import express from 'express';
 import { listings, categories } from '../data/listings.js';
 import { v4 as uuidv4 } from 'uuid';
+import { optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 let allListings = [...listings];
@@ -61,12 +62,28 @@ router.get('/:id', (req, res) => {
 });
 
 // Create new listing
-router.post('/', (req, res) => {
-  const { title, category, price, location, condition, description, images } = req.body;
+router.post('/', optionalAuth, (req, res) => {
+  const { title, category, price, location, condition, description, images, sellerNotes } = req.body;
 
   if (!title || !category || price === undefined) {
     return res.status(400).json({ error: 'נתונים חסרים' });
   }
+
+  // Build seller from logged-in user, or fallback defaults
+  const seller = req.user
+    ? {
+        id:    req.user.id,
+        name:  req.user.name,
+        phone: req.user.phone || null,
+        email: req.user.email || null,
+        image: `https://i.pravatar.cc/150?u=${req.user.id}`,
+      }
+    : {
+        name:  'משתמש אנונימי',
+        phone: null,
+        email: null,
+        image: 'https://i.pravatar.cc/150?img=50',
+      };
 
   const newListing = {
     id: uuidv4(),
@@ -77,11 +94,9 @@ router.post('/', (req, res) => {
     price: parseFloat(price),
     location: location || 'לא צוין',
     condition: condition || 'טוב',
-    seller: {
-      name: 'משתמש חדש',
-      phone: '050-0000000',
-      image: 'https://i.pravatar.cc/150?img=50'
-    },
+    sellerNotes: sellerNotes || null,
+    userId: req.user?.id || null,  // for ownership detection on frontend
+    seller,
     images: images || ['https://images.unsplash.com/photo-1540932954986-b06535f787f6?w=600'],
     date: new Date(),
     views: 0,

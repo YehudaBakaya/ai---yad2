@@ -18,6 +18,11 @@ const categories = [
   { id: 'services',   name: 'שירותים',       icon: '🔧' },
 ];
 
+const CACHE_TTL   = 3 * 60 * 1000; // 3 minutes
+const cacheKey    = (cat) => `yad2_listings_${cat || 'all'}_v2`;
+const toCache     = (items) => items.map(l => ({ ...l, date: l.date?.toMillis?.() ?? l.date ?? null }));
+const hasTextFilters = (f) => !!(f.search || f.minPrice || f.maxPrice || f.location || f.condition);
+
 export default function Listings() {
   const [searchParams] = useSearchParams();
   const [listings, setListings]     = useState([]);
@@ -36,14 +41,34 @@ export default function Listings() {
   });
 
   useEffect(() => {
+    setLastDoc(null);
+    const noText = !hasTextFilters(filters);
+
+    // 1. Show cached data immediately if no text filters
+    if (noText) {
+      try {
+        const raw = JSON.parse(localStorage.getItem(cacheKey(filters.category)) || 'null');
+        if (raw?.ts && Date.now() - raw.ts < CACHE_TTL && raw.data?.length) {
+          setListings(raw.data);
+          setHasMore(raw.hasMore ?? false);
+          setLoading(false);
+        }
+      } catch {}
+    }
+
+    // 2. Fetch fresh from Firestore
     const fetchListings = async () => {
-      setLoading(true);
-      setLastDoc(null);
       try {
         const { results, lastDoc: ld, hasMore: more } = await getListings(filters);
         setListings(results);
         setLastDoc(ld);
         setHasMore(more);
+        // Cache only non-text results
+        if (noText) {
+          localStorage.setItem(cacheKey(filters.category), JSON.stringify({
+            ts: Date.now(), data: toCache(results), hasMore: more,
+          }));
+        }
       } catch (error) {
         console.error('Error fetching listings:', error);
       } finally {

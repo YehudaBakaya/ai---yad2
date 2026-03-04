@@ -22,7 +22,7 @@ const createUser = (data) => {
   return user;
 };
 
-const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, avatar: u.avatar || null, provider: u.provider });
+const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, phone: u.phone || null, avatar: u.avatar || null, provider: u.provider });
 
 // ─────────────────────────────────────────────
 // Google OAuth — Passport setup
@@ -76,7 +76,7 @@ if (GOOGLE_CONFIGURED) {
  */
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
 
     if (!name || !email || !password)
       return res.status(400).json({ error: 'שם, אימייל וסיסמה נדרשים' });
@@ -89,7 +89,7 @@ router.post('/register', async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 12);
     // כשמשתמשים ב-MongoDB: const user = await User.create({ ... });
-    const user = createUser({ name: name.trim(), email: email.toLowerCase(), password: hashed, provider: 'local' });
+    const user = createUser({ name: name.trim(), email: email.toLowerCase(), phone: phone?.trim() || null, password: hashed, provider: 'local' });
 
     const token = signToken(user);
     res.status(201).json({ token, user: safeUser(user) });

@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'yad2-ai-secret-change-in-productio
  */
 export const signToken = (user) =>
   jwt.sign(
-    { id: user.id || user._id, email: user.email, name: user.name },
+    { id: user.id || user._id, email: user.email, name: user.name, phone: user.phone || null },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
