@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
 import {
   signInWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
@@ -23,26 +22,6 @@ export default function Login() {
   const [resetMode, setResetMode] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetMsg, setResetMsg]     = useState('');
-
-  // Handle redirect result from Google OAuth (after page reload back from Google)
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result?.user) {
-          setLoading(true);
-          try {
-            await syncUser();
-            navigate(from, { replace: true });
-          } catch {
-            setError('שגיאה בטעינת המשתמש');
-            setLoading(false);
-          }
-        }
-      })
-      .catch((err) => {
-        setError(`שגיאת Google: ${err.code || err.message || 'שגיאה לא ידועה'}`);
-      });
-  }, []); // eslint-disable-line
 
   const set = (k, v) => { setForm(p => ({ ...p, [k]: v })); setError(''); };
 
@@ -81,10 +60,13 @@ export default function Login() {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      // Redirect flow — page reloads after Google auth, result handled in useEffect above
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
+      await syncUser();
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(`שגיאת Google: ${err.code || err.message}`);
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setError(`שגיאת Google: ${err.code || err.message}`);
+      }
       setLoading(false);
     }
   };

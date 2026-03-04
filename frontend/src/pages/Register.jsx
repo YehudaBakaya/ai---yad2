@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { saveUserProfile } from '../services/firestoreService';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,24 +14,6 @@ export default function Register() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
-  // Handle redirect result from Google OAuth
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result?.user) {
-          setLoading(true);
-          try {
-            await syncUser();
-            navigate('/');
-          } catch {
-            setErrors({ submit: 'שגיאה בטעינת המשתמש' });
-            setLoading(false);
-          }
-        }
-      })
-      .catch((err) => setErrors({ submit: `שגיאת Google: ${err.code || err.message || 'שגיאה לא ידועה'}` }));
-  }, []); // eslint-disable-line
 
   const set = (k, v) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: '' })); };
 
@@ -72,9 +54,13 @@ export default function Register() {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
+      await syncUser();
+      navigate('/');
     } catch (err) {
-      setErrors({ submit: `שגיאת Google: ${err.code || err.message}` });
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setErrors({ submit: `שגיאת Google: ${err.code || err.message}` });
+      }
       setLoading(false);
     }
   };
