@@ -14,95 +14,73 @@ const hasRealAPI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-const ACCEPT_WORDS = ['מסכים', 'מקובל', 'בסדר גמור', 'לקחתי', 'קנוי', 'deal', 'סגור', 'מוכן לסגור', 'נסגר', 'אני לוקח', 'אני קונה', 'עסקה'];
-const REJECT_WORDS = ['לא מסכים', 'לא מקובל', 'יקר מדי', 'לא שווה', 'לא', 'נו באמת', 'בוא נדבר'];
+const ACCEPT_WORDS = ['מסכים', 'מקובל', 'בסדר גמור', 'לקחתי', 'קנוי', 'deal', 'סגור', 'מוכן לסגור', 'נסגר', 'אני לוקח', 'אני קונה', 'עסקה', 'יאללה סוגרים', 'בוא נסגור', 'מסכים למחיר'];
+const LOWEST_WORDS  = ['הכי נמוך', 'מינימום', 'תחתית', 'אין פחות', 'bottom', 'lowest', 'מה הכי'];
+const URGENT_WORDS  = ['היום', 'עכשיו', 'מזומן', 'cash', 'מיד', 'תוך שעה'];
+const MIDPOINT_WORDS= ['נפגש באמצע', 'חצי חצי', 'ספליט', 'split', 'meet in the middle', 'פגישה באמצע'];
 
 const detectAcceptance = (msg) => ACCEPT_WORDS.some(w => msg.includes(w));
-const detectRejection  = (msg) => REJECT_WORDS.some(w => msg.includes(w));
+const detectLowest     = (msg) => LOWEST_WORDS.some(w => msg.includes(w));
+const detectUrgent     = (msg) => URGENT_WORDS.some(w => msg.includes(w));
+const detectMidpoint   = (msg) => MIDPOINT_WORDS.some(w => msg.includes(w));
 
-// extract number from message (e.g. "אני מציע 5000")
+// Extract number from message
 const extractAmount = (msg) => {
-  const m = msg.replace(/,/g, '').match(/\d{2,7}/);
+  const m = msg.replace(/,/g, '').match(/\d{2,8}/);
   return m ? parseInt(m[0], 10) : null;
 };
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-// ── buyer scripts ─────────────────────────────────────────────────────────────
-
-const buyerOpeners = (lp) => [
-  `שלום! אני מעוניין ברכישה. המחיר המבוקש ₪${lp.toLocaleString()} קצת גבוה — אני מציע ₪${Math.round(lp*0.85).toLocaleString()}. מה דעתך?`,
-  `היי! ראיתי את המודעה וזה מעניין אותי. יש לי תקציב של ₪${Math.round(lp*0.85).toLocaleString()} — האם אפשר לדבר?`,
-  `שלום, אני קונה רציני. ₪${Math.round(lp*0.87).toLocaleString()} ומגיע להיום — עסקה?`,
-];
-const buyerMid = (lp, round) => {
-  const offer = Math.round(lp * (0.82 - round * 0.02));
-  return {
-    msgs: [
-      `ראיתי מודעות דומות ב-₪${Math.round(lp*0.75).toLocaleString()}–₪${Math.round(lp*0.82).toLocaleString()}. אני מציע ₪${offer.toLocaleString()} — הוגן לשני הצדדים.`,
-      `אני מעריך, אבל ₪${offer.toLocaleString()} זה המקסימום שלי כרגע. אפשר?`,
-      `בשוק כיום זה שווה ₪${offer.toLocaleString()} לכל היותר. מה אתה אומר?`,
-    ],
-    offer,
-  };
-};
-const buyerFinal = (lp) => {
-  const offer = Math.round(lp * 0.78);
-  return {
-    msgs: [
-      `בסדר, הצעה סופית: ₪${offer.toLocaleString()} ומגיע עם מזומן היום. זה הטוב ביותר שלי.`,
-      `אני עושה לך הצעה שלא תוכל לסרב לה: ₪${offer.toLocaleString()} — סוגרים?`,
-    ],
-    offer,
-  };
+// Round to nearest "clean" number (looks more human)
+const cleanPrice = (n) => {
+  if (n >= 100000) return Math.round(n / 1000) * 1000;
+  if (n >= 10000)  return Math.round(n / 500)  * 500;
+  if (n >= 1000)   return Math.round(n / 100)  * 100;
+  if (n >= 100)    return Math.round(n / 50)   * 50;
+  return Math.round(n / 10) * 10;
 };
 
-// ── seller scripts ────────────────────────────────────────────────────────────
-
-const sellerOpeners = (lp) => [
-  `תודה על ההתעניינות! המוצר במצב מעולה עם ביקוש גבוה. ₪${lp.toLocaleString()} זה המחיר, אך אם אתה קונה היום — אוכל לרדת ₪${Math.round(lp*0.03).toLocaleString()}.`,
-  `שלום! שמח שהתעניינת. המחיר שלי ₪${lp.toLocaleString()} ומוצדק לחלוטין. תגיד לי מה בראשך.`,
-];
-const sellerMid = (lp, round) => {
-  const deduct = 500 + round * 300;
-  const offer  = lp - deduct;
-  return {
-    msgs: [
-      `אני מעריך את ההצעה, אבל השקעתי בבדיקה וטיפול. ₪${offer.toLocaleString()} — ולא פחות.`,
-      `הפריט שווה כל שקל. ₪${offer.toLocaleString()} זה ההנחה המקסימלית שלי בשלב זה.`,
-      `בסדר, אני גמיש קצת: ₪${offer.toLocaleString()}. אבל זה קרוב לתחתית.`,
-    ],
-    offer,
-  };
-};
-const sellerFinal = (lp) => {
-  const offer = lp - 1500;
-  return {
-    msgs: [
-      `הצעה אחרונה: ₪${offer.toLocaleString()}. אם לא — אני ממשיך למציעים אחרים שכבר שאלו.`,
-      `₪${offer.toLocaleString()} — זה הסוף. לא ירד עוד.`,
-    ],
-    offer,
-  };
+// Get last AI offer from history
+const getLastAIOffer = (history, fallback) => {
+  for (let i = (history?.length || 0) - 1; i >= 0; i--) {
+    if (history[i].offer && history[i].sender === 'ai') return history[i].offer;
+    if (history[i].offer) return history[i].offer;
+  }
+  return fallback;
 };
 
-// ── main mock ─────────────────────────────────────────────────────────────────
-
+// ── Professional Sales Agent Negotiation Engine ─────────────────────────────
+//
+// Strategy (seller role):
+//   1. Open with value anchoring — justify the asking price
+//   2. React to buyer's offer:
+//      - Lowball (< 65%): Push back hard, don't move much
+//      - Low (65–78%):    Counter at ~88-92% with justification
+//      - Fair (78–88%):   Counter splitting the gap, lean seller
+//      - Good (88–94%):   Small final concession, pressure to close
+//      - Near-match(>94%):Accept or tiny symbolic concession
+//   3. Use urgency, social proof, and value arguments
+//   4. Never go below minFloor
+//   5. Max total concession: 15% (unless minFloor says otherwise)
+//
 const getAIMockResponse = (message, role, listingPrice, history, sellerNotes = null) => {
-  const msg      = message.trim();
+  const msg      = message.trim().toLowerCase();
+  const lp       = listingPrice;
   const round    = Math.floor((history?.length || 0) / 2);
-  const minFloor = sellerNotes?.minPrice ? Number(sellerNotes.minPrice) : null;
+  const minFloor = sellerNotes?.minPrice
+    ? Number(sellerNotes.minPrice)
+    : cleanPrice(lp * 0.82); // default floor: 82% of asking price
 
-  // ── deal accepted?
+  // ── Deal accepted ──────────────────────────────────────────────────────────
   if (detectAcceptance(msg)) {
-    const lastOffer = (() => {
-      for (let i = history.length - 1; i >= 0; i--) {
-        if (history[i].offer) return history[i].offer;
-      }
-      return listingPrice;
-    })();
+    const lastOffer = getLastAIOffer(history, lp);
     return {
-      message: `🤝 מצוין! הגענו להסכמה על ₪${lastOffer.toLocaleString()}. אני שולח עכשיו את ההצעה למוכר לאישור סופי — הוא יחזיר תשובה בהקדם.`,
+      message: pick([
+        `🤝 מצוין! הגענו להסכמה על ₪${lastOffer.toLocaleString()}. אני מעביר את ההצעה למוכר לאישור סופי — הוא יחזיר תשובה בהקדם.`,
+        `✅ סוגרים! ₪${lastOffer.toLocaleString()} — עסקה יפה לשני הצדדים. שולח למוכר לאישור.`,
+        `🎉 מעולה! ₪${lastOffer.toLocaleString()} זה מחיר הוגן. שולח לאישור המוכר עכשיו.`,
+      ]),
       currentOffer: lastOffer,
       confidence: 1,
       dealReached: true,
@@ -110,65 +88,189 @@ const getAIMockResponse = (message, role, listingPrice, history, sellerNotes = n
     };
   }
 
-  // ── user gave a counter number?
-  const userAmount = extractAmount(msg);
+  // ── Extract buyer's offered amount ─────────────────────────────────────────
+  const buyerOffer = extractAmount(msg);
+  const isUrgent   = detectUrgent(msg);
+  const isMidpoint = detectMidpoint(msg);
+  const isLowest   = detectLowest(msg);
 
-  if (role === 'buyer') {
+  // Current AI position
+  const lastAIOffer = getLastAIOffer(history, lp);
+  const gapTotal    = lp - minFloor; // total negotiation room
+  const maxDrop     = Math.max(gapTotal, lp * 0.15); // at most 15% drop
+  const hardFloor   = Math.max(minFloor, lp - maxDrop);
+
+  // Helper: clamp offer to floor
+  const clamp = (v) => Math.max(cleanPrice(v), hardFloor);
+
+  // ── Seller role (AI represents seller) ────────────────────────────────────
+  if (role === 'seller') {
+
+    // ── Round 0: Opening statement ──────────────────────────────────────────
     if (round === 0) {
-      const offer = Math.round(listingPrice * 0.85);
+      const firstOffer = clamp(lp * 0.97);
+      const urgencyBonus = isUrgent ? ` מכיוון שאתה מוכן לסגור היום, אני יכול להציע ₪${clamp(lp * 0.95).toLocaleString()}.` : '';
       return {
-        message: pick(buyerOpeners(listingPrice)),
-        currentOffer: offer,
-        confidence: 0.70,
-        suggestedReplies: ['מה הכי נמוך שתוכל?', 'אני מציע מחיר נמוך יותר', 'מסכים למחיר הזה'],
+        message: pick([
+          `שלום וברוך הבא! שמח שהתעניינת. 😊\n\nהמוצר במצב ${sellerNotes?.condition || 'מצוין'} ואני מקבל פניות עליו ברציפות. המחיר ₪${lp.toLocaleString()} משקף את האיכות האמיתית שלו.${urgencyBonus}\n\nמה בראשך?`,
+          `תודה על ההתעניינות! 🙏\n\nאני מוכר ישר ומקצועי — המחיר ₪${lp.toLocaleString()} הוא מחיר שוק ריאלי. יש לי מספר מתעניינים, אבל אשמח לסגור עם מי שרציני.\n\nמה ההצעה שלך?`,
+          `היי! מעניין לשמוע. 👋\n\nהמוצר שלי הושקע בו — ${sellerNotes?.reason ? `אני מוכר כי ${sellerNotes.reason}` : 'אני מוכר בגלל שינוי נסיבות'}. המחיר ₪${lp.toLocaleString()} סופי כמעט, אבל עם הצעה רצינית — נדבר.`,
+        ]),
+        currentOffer: firstOffer,
+        confidence: 0.82,
+        suggestedReplies: ['מה הכי נמוך שאפשר?', `אני מציע ₪${cleanPrice(lp * 0.85).toLocaleString()}`, 'יש גמישות במחיר?'],
       };
     }
-    if (round < 3) {
-      const { msgs, offer } = buyerMid(listingPrice, round);
+
+    // ── Analyze buyer's position ────────────────────────────────────────────
+    const buyerPct = buyerOffer ? buyerOffer / lp : null;
+
+    // ── "What's your lowest?" ───────────────────────────────────────────────
+    if (isLowest) {
+      const lowestOffer = clamp(hardFloor + cleanPrice(gapTotal * 0.1));
       return {
-        message: pick(msgs),
-        currentOffer: userAmount && userAmount < listingPrice ? Math.round((userAmount + offer) / 2) : offer,
-        confidence: 0.75,
-        suggestedReplies: ['בסדר, מסכים', 'עוד קצת הנחה?', 'נפגש באמצע'],
+        message: pick([
+          `אני מעריך את הישירות! 💪\n\nהכי נמוך שאני יכול להגיע — בהתחשב שמדובר במוצר איכותי — הוא ₪${lowestOffer.toLocaleString()}. מתחת לזה זה פשוט לא שווה לי למכור.\n\nזה מחיר שעובד עבורך?`,
+          `שאלה הוגנת. 🎯\n\nה"תחתית" שלי היא ₪${lowestOffer.toLocaleString()} — ולא אתפתה מתחת לזה. השקעתי במוצר הזה ואני יודע בדיוק מה הוא שווה.\n\nמה אתה אומר?`,
+        ]),
+        currentOffer: lowestOffer,
+        confidence: 0.88,
+        suggestedReplies: [`מסכים — ₪${lowestOffer.toLocaleString()}`, 'יקר לי קצת', 'בוא נפגש באמצע'],
       };
     }
-    const { msgs, offer } = buyerFinal(listingPrice);
+
+    // ── "Meet in the middle" ────────────────────────────────────────────────
+    if (isMidpoint && buyerOffer) {
+      const midpoint = clamp((buyerOffer + lastAIOffer) / 2);
+      // Lean slightly toward seller
+      const ourMid   = clamp(midpoint + cleanPrice((lastAIOffer - midpoint) * 0.3));
+      return {
+        message: pick([
+          `אני אוהב הגישה! 🤝\n\nבוא נפגש — אבל קרוב יותר אליי: ₪${ourMid.toLocaleString()}. זה הוגן לשני הצדדים, ומסיים את העסקה בצורה נקייה.`,
+          `"מפגש באמצע" — שמעת. 😄\n\nאם אני מוריד ל-₪${ourMid.toLocaleString()}, זה כבר מפגש אמיתי. מה אתה אומר?`,
+        ]),
+        currentOffer: ourMid,
+        confidence: 0.87,
+        suggestedReplies: [`מסכים ₪${ourMid.toLocaleString()}`, 'יש עוד מקום?', 'צריך לחשוב'],
+      };
+    }
+
+    // ── Buyer made a specific offer ─────────────────────────────────────────
+    if (buyerOffer && buyerPct !== null) {
+
+      // Lowball (< 65%)
+      if (buyerPct < 0.65) {
+        const counter = clamp(lp * 0.94);
+        return {
+          message: pick([
+            `🙂 אני מבין שאתה מנסה — אבל ₪${buyerOffer.toLocaleString()} זה רחוק מהמציאות.\n\nהמוצר הזה שווה כל שקל של ₪${lp.toLocaleString()}. במחיר כזה אוכל להציע ₪${counter.toLocaleString()} לכל היותר, ורק כי אני רוצה לסגור מהר.\n\nמה אתה אומר?`,
+            `בכל הכבוד — ₪${buyerOffer.toLocaleString()} זה לא הצעה שאני יכול לשקול ברצינות. 😅\n\nיש לי מתעניינים אחרים שמציעים הרבה יותר. הכי שאני יכול לרדת עכשיו — ₪${counter.toLocaleString()}.\n\nזה עובד?`,
+            `הצעה אמיצה! 😄 אבל המוצר הזה לא "מחיר הורסים".\n\nאם אתה רציני, בוא נדבר על ₪${counter.toLocaleString()} — שזה כבר הנחה יפה מהמחיר המקורי.`,
+          ]),
+          currentOffer: counter,
+          confidence: 0.75,
+          suggestedReplies: [`בסדר, ₪${counter.toLocaleString()}`, 'יקר לי', `אני מציע ₪${cleanPrice(buyerOffer * 1.1).toLocaleString()}`],
+        };
+      }
+
+      // Low (65–78%)
+      if (buyerPct < 0.78) {
+        // Counter: split gap, lean seller 70/30
+        const split   = buyerOffer + (lastAIOffer - buyerOffer) * 0.7;
+        const counter = clamp(split);
+        const urgBonus = isUrgent ? ` ומכיוון שאתה מגיע היום — אני מוריד עוד קצת ל-₪${clamp(counter - cleanPrice(lp * 0.01)).toLocaleString()}.` : '';
+        return {
+          message: pick([
+            `אני מעריך את הכנות. ₪${buyerOffer.toLocaleString()} זה עדיין נמוך מדי בשבילי. 🤔\n\nהשקעתי במוצר הזה ואני יודע מה הוא שווה בשוק. הצעה שאני יכול לשקול: ₪${counter.toLocaleString()}.${urgBonus}\n\nזה מתאים?`,
+            `₪${buyerOffer.toLocaleString()} — לא שם עדיין, אבל אנחנו בכיוון. 👍\n\nיש לי עוד שניים-שלושה מתעניינים שמחכים לתשובה. אני יכול לתת ₪${counter.toLocaleString()} — ולא יותר בשלב זה.\n\nמה תחליט?`,
+            `אנחנו עדיין רחוקים, אבל לא נואשים. 😊\n\n₪${counter.toLocaleString()} — זה מחיר שמשקף את האיכות ונותן לך הנחה אמיתית. אני לא יכול ללכת נמוך יותר בלי להרגיש שמכרתי בהפסד.`,
+          ]),
+          currentOffer: counter,
+          confidence: 0.80,
+          suggestedReplies: [`מסכים, ₪${counter.toLocaleString()}`, 'יכול עוד קצת?', 'נפגש באמצע'],
+        };
+      }
+
+      // Reasonable (78–88%)
+      if (buyerPct < 0.88) {
+        const split   = buyerOffer + (lastAIOffer - buyerOffer) * 0.55;
+        const counter = clamp(split);
+        return {
+          message: pick([
+            `עכשיו אנחנו מדברים! 🎯\n\n₪${buyerOffer.toLocaleString()} — הצעה הגיונית. אני יכול לפגוש אותך ב-₪${counter.toLocaleString()}. זה מחיר שניהם יכולים להיות שבעי רצון ממנו.\n\nמה אתה אומר?`,
+            `טוב, אני רואה שאתה רציני. 👏\n\nאני מוריד ל-₪${counter.toLocaleString()} — וזה כבר מחיר שאני לא מצפה לו מהרבה קונים. לא ייתכן שתמצא מוצר כזה במחיר הזה במקום אחר.\n\nנסגר?`,
+            `הצעה סבירה. אני בכיוון. 😎\n\n₪${counter.toLocaleString()} — ומוסיף גם שמביא אותו אלייך / עוזר בהעמסה. זה deal שכדאי לסגור עכשיו.\n\nמה אתה אומר?`,
+          ]),
+          currentOffer: counter,
+          confidence: 0.84,
+          suggestedReplies: [`סוגרים ב-₪${counter.toLocaleString()}`, 'עוד קצת?', 'תן לי לחשוב'],
+        };
+      }
+
+      // Good offer (88–94%)
+      if (buyerPct < 0.94) {
+        const counter = clamp(buyerOffer + cleanPrice((lastAIOffer - buyerOffer) * 0.4));
+        return {
+          message: pick([
+            `אנחנו ממש קרובים! 🔥\n\n₪${buyerOffer.toLocaleString()} — הצעה טובה מאוד. אני יכול ל-₪${counter.toLocaleString()} ולא פחות. זה שווה לך — ואנחנו סוגרים עכשיו.\n\nמה אתה אומר?`,
+            `כמעט שם! 🎯\n\n₪${counter.toLocaleString()} — זה ה"last call" שלי. אני מקבל פניה נוספת לגבי המוצר הזה, אז אם אתה רציני — עכשיו זה הזמן.\n\nנסגר?`,
+            `הצעה מצוינת — ואני עונה לה בכבוד: ₪${counter.toLocaleString()}. 🤝\n\nאני לא אמוד לקחת פחות, כי גם כך ויתרתי הרבה. אבל אני רוצה שתהיה מרוצה מהעסקה.\n\nנסגר?`,
+          ]),
+          currentOffer: counter,
+          confidence: 0.90,
+          suggestedReplies: [`מסכים! ₪${counter.toLocaleString()}`, 'ממש קרוב, עוד קצת', 'אצטרך לחשוב'],
+        };
+      }
+
+      // Near match (≥ 94%) — accept with tiny symbolic give
+      const finalOffer = clamp(buyerOffer + cleanPrice((lastAIOffer - buyerOffer) * 0.2));
+      return {
+        message: pick([
+          `בסדר, אתה שכנעת אותי. 💪\n\n₪${finalOffer.toLocaleString()} — ואנחנו סוגרים. זו הצעה שאני מרגיש בה בסדר, ואני מקווה שגם אתה.\n\nסוגרים?`,
+          `הצעה קרובה מאוד — הנה ה"אחרון" שלי: ₪${finalOffer.toLocaleString()}. 🤝\n\nאנחנו פרקטית שם. בוא נגמור את זה.`,
+        ]),
+        currentOffer: finalOffer,
+        confidence: 0.95,
+        suggestedReplies: [`מסכים! סוגרים ב-₪${finalOffer.toLocaleString()}`, 'בסדר גמור', 'לקחתי'],
+      };
+    }
+
+    // ── No specific amount, general message ────────────────────────────────
+    // Round 1-2: Value argument
+    if (round <= 2) {
+      const counter = clamp(lp * (0.96 - round * 0.02));
+      return {
+        message: pick([
+          `אני שמח לנהל משא ומתן, אבל תן לי קודם להסביר למה המחיר הוגן. 🧐\n\nהמוצר הזה במצב ${sellerNotes?.condition || 'מצוין'}, כולל את כל האביזרים, ומחירי השוק מאשרים שאנחנו בטווח הנכון. ₪${counter.toLocaleString()} — מה אתה מציע?`,
+          `נשמח לדבר על מחיר. 😊\n\nאבל לפני, חשוב לי שתדע: ${sellerNotes?.reason ? `אני מוכר כי ${sellerNotes.reason}` : 'אני מוכר כי אני קונה משהו חדש'}, לא מכורח. ₪${counter.toLocaleString()} זה מחיר שמכבד את שני הצדדים.\n\nמה ההצעה שלך?`,
+        ]),
+        currentOffer: counter,
+        confidence: 0.82,
+        suggestedReplies: [`₪${cleanPrice(lp * 0.85).toLocaleString()}`, `₪${cleanPrice(lp * 0.88).toLocaleString()}`, 'מה הכי נמוך שאפשר?'],
+      };
+    }
+
+    // Round 3+: Pressure to close
+    const pressureOffer = clamp(lastAIOffer - cleanPrice(lp * 0.015));
     return {
-      message: pick(msgs),
-      currentOffer: offer,
-      confidence: 0.85,
-      suggestedReplies: ['מסכים! סוגרים', 'לא יכול ללכת נמוך יותר?', 'אצטרך לחשוב'],
+      message: pick([
+        `אוקיי, בוא נסגור את זה. ⏰\n\nיש לי מתעניין נוסף שחוזר אליי היום. אני יכול ל-₪${pressureOffer.toLocaleString()} — ולא פחות. אם אתה רוצה את המוצר, עכשיו זה הזמן.\n\nמה אומר?`,
+        `הצעה אחרונה מצדי: ₪${pressureOffer.toLocaleString()}. 🎯\n\nאני לא יכול לחכות הרבה יותר, ואני לא מורד עוד. זה מחיר הוגן — קח את זה.`,
+        `₪${pressureOffer.toLocaleString()} — ואנחנו סוגרים עסקה. 🤝\n\nאם לא, אני חוזר למתעניינים האחרים. אין טינה — אבל המחיר הזה לא ייחזיק הרבה.`,
+      ]),
+      currentOffer: pressureOffer,
+      confidence: 0.92,
+      suggestedReplies: [`מסכים! ₪${pressureOffer.toLocaleString()}`, 'עוד ₪100 הנחה?', 'לא מתאים לי'],
     };
   }
 
-  // seller
-  if (round === 0) {
-    const offer = Math.round(listingPrice * 0.97);
-    return {
-      message: pick(sellerOpeners(listingPrice)),
-      currentOffer: offer,
-      confidence: 0.85,
-      suggestedReplies: ['מה ההצעה שלך?', 'המחיר סופי', 'יש גמישות?'],
-    };
-  }
-  if (round < 3) {
-    const { msgs, offer } = sellerMid(listingPrice, round);
-    let finalOffer = userAmount && userAmount > listingPrice * 0.6 ? Math.round((userAmount + offer) / 2) : offer;
-    if (minFloor && finalOffer < minFloor) finalOffer = minFloor;
-    return {
-      message: pick(msgs),
-      currentOffer: finalOffer,
-      confidence: 0.80,
-      suggestedReplies: ['מקובל עלי', 'עוד קצת?', 'בוא נפגש באמצע'],
-    };
-  }
-  const { msgs, offer } = sellerFinal(listingPrice);
-  const clampedOffer = minFloor && offer < minFloor ? minFloor : offer;
+  // ── Buyer role (not used in current app flow) ───────────────────────────
+  const buyerCounter = cleanPrice(lp * Math.max(0.78, 0.88 - round * 0.02));
   return {
-    message: pick(msgs),
-    currentOffer: clampedOffer,
-    confidence: 0.90,
-    suggestedReplies: ['מקובל! סוגרים', 'צריך לחשוב', 'לא מתאים לי'],
+    message: `אני מעוניין ב-₪${buyerCounter.toLocaleString()}. מה דעתך?`,
+    currentOffer: buyerCounter,
+    confidence: 0.78,
+    suggestedReplies: ['בסדר', 'יקר לי', 'נפגש באמצע'],
   };
 };
 
