@@ -60,8 +60,8 @@ export default function Login() {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      await syncUser();
+      const { user: firebaseUser } = await signInWithPopup(auth, googleProvider);
+      await syncUser(firebaseUser);
       navigate(from, { replace: true });
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {

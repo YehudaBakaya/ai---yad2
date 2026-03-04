@@ -54,8 +54,8 @@ export default function Register() {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      await syncUser();
+      const { user: firebaseUser } = await signInWithPopup(auth, googleProvider);
+      await syncUser(firebaseUser);
       navigate('/');
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {

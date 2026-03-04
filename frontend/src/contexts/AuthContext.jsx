@@ -28,17 +28,17 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  // קריאה מיידית ל-auth.currentUser (אחרי sign-in, לפני שonAuthStateChanged מספיק להתעדכן)
-  const syncUser = useCallback(async () => {
-    const firebaseUser = auth.currentUser;
-    if (!firebaseUser) return;
-    const profile = await getUserProfile(firebaseUser.uid).catch(() => null);
+  // קריאה מיידית אחרי sign-in — מקבל את firebaseUser ישירות (לא מסתמך על auth.currentUser)
+  const syncUser = useCallback(async (firebaseUser) => {
+    const u = firebaseUser || auth.currentUser;
+    if (!u) return;
+    const profile = await getUserProfile(u.uid).catch(() => null);
     setUser({
-      id:     firebaseUser.uid,
-      name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
-      email:  firebaseUser.email,
+      id:     u.uid,
+      name:   u.displayName || u.email?.split('@')[0] || 'משתמש',
+      email:  u.email,
       phone:  profile?.phone || null,
-      avatar: firebaseUser.photoURL || null,
+      avatar: u.photoURL || null,
     });
   }, []);
 
