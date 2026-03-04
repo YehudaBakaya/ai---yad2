@@ -37,6 +37,8 @@ export default function Login() {
       .catch((err) => {
         if (err.code === 'auth/unauthorized-domain') {
           setError('הדומיין לא מאושר — הוסף ל-Firebase Console → Auth → Authorized Domains');
+        } else if (err.code) {
+          setError(`שגיאת Google: ${err.code}`);
         }
       })
       .finally(() => setLoading(false));
@@ -81,8 +83,8 @@ export default function Login() {
     try {
       // Redirect flow — page reloads after Google auth, result handled in useEffect above
       await signInWithRedirect(auth, googleProvider);
-    } catch {
-      setError('שגיאה בהתחברות עם Google');
+    } catch (err) {
+      setError(`שגיאת Google: ${err.code || err.message}`);
       setLoading(false);
     }
   };

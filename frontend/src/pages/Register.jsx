@@ -25,7 +25,7 @@ export default function Register() {
           navigate('/');
         }
       })
-      .catch(() => setErrors({ submit: 'שגיאה בהרשמה עם Google' }))
+      .catch((err) => setErrors({ submit: `שגיאת Google: ${err.code || err.message}` }))
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line
 
@@ -69,8 +69,8 @@ export default function Register() {
     setLoading(true);
     try {
       await signInWithRedirect(auth, googleProvider);
-    } catch {
-      setErrors({ submit: 'שגיאה בהרשמה עם Google' });
+    } catch (err) {
+      setErrors({ submit: `שגיאת Google: ${err.code || err.message}` });
       setLoading(false);
     }
   };
