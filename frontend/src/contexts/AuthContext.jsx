@@ -10,16 +10,24 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        const profile = await getUserProfile(firebaseUser.uid).catch(() => null);
+        // Set user immediately — don't wait for Firestore profile
         setUser({
           id:     firebaseUser.uid,
           name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
           email:  firebaseUser.email,
-          phone:  profile?.phone || null,
+          phone:  null,
           avatar: firebaseUser.photoURL || null,
         });
+        // Fetch phone number in background (non-blocking)
+        getUserProfile(firebaseUser.uid)
+          .then((profile) => {
+            if (profile?.phone) {
+              setUser(prev => prev ? { ...prev, phone: profile.phone } : prev);
+            }
+          })
+          .catch(() => {});
       } else {
         setUser(null);
       }
