@@ -17,13 +17,15 @@ export const aiAPI = {
 
 // ── Listings API (MongoDB via Express) ──────────────────────────────────────
 export const listingsAPI = {
-  getAll:    (params = {})   => api.get('/listings', { params }),
-  getOne:    (id)            => api.get(`/listings/${id}`),
-  getByUser: (userId)        => api.get('/listings', { params: { userId } }),
-  create:    (data)          => api.post('/listings', data),
-  update:    (id, data)      => api.put(`/listings/${id}`, data),
-  remove:    (id)            => api.delete(`/listings/${id}`),
-  categories: ()             => api.get('/listings/categories/all'),
+  getAll:         (params = {})        => api.get('/listings', { params }),
+  getOne:         (id)                 => api.get(`/listings/${id}`),
+  getByUser:      (userId)             => api.get('/listings', { params: { userId } }),
+  create:         (data)               => api.post('/listings', data),
+  update:         (id, data)           => api.put(`/listings/${id}`, data),
+  remove:         (id)                 => api.delete(`/listings/${id}`),
+  categories:     ()                   => api.get('/listings/categories/all'),
+  incrementViews: (id)                 => api.patch(`/listings/${id}/views`),
+  updateSellerInfo: (userId, seller)   => api.patch('/listings/seller', { userId, seller }),
 };
 
 // ── Auth API (MongoDB sync) ──────────────────────────────────────────────────

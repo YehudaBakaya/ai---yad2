@@ -5,9 +5,10 @@ import { updateProfile } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, uploadImage } from '../services/firestoreService';
+import { listingsAPI } from '../services/api';
 
 export default function Profile() {
-  const { user, syncUser } = useAuth();
+  const { user, syncUser, updateUser } = useAuth();
   const navigate = useNavigate();
   const fileRef  = useRef(null);
 
@@ -56,8 +57,21 @@ export default function Profile() {
         avatar: photoURL,
       });
 
-      // Sync AuthContext immediately
-      await syncUser();
+      // Update AuthContext immediately (optimistic) so Navbar + all components update at once
+      updateUser({ name: form.name.trim(), phone: form.phone.trim() || null, avatar: photoURL || user?.avatar });
+
+      // Sync all user listings with new seller info (fire-and-forget)
+      if (user?.id) {
+        listingsAPI.updateSellerInfo(user.id, {
+          name:  form.name.trim(),
+          phone: form.phone.trim() || null,
+          email: user.email,
+          image: photoURL || user.avatar || null,
+        }).catch(() => {});
+      }
+
+      // Full sync in background (updates phone from Firestore, re-confirms all fields)
+      syncUser().catch(() => {});
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);

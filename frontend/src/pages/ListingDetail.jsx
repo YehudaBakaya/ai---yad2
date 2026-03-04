@@ -25,6 +25,8 @@ export default function ListingDetail() {
       try {
         const { data } = await listingsAPI.getOne(id);
         setListing(data);
+        // Increment view count fire-and-forget
+        listingsAPI.incrementViews(id).catch(() => {});
         if (data?.categoryEn) {
           const { data: allSimilar } = await listingsAPI.getAll({ category: data.categoryEn });
           setSimilarListings(allSimilar.filter(l => l.id !== id).slice(0, 3));

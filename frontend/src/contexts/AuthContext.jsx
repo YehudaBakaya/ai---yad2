@@ -66,12 +66,17 @@ export function AuthProvider({ children }) {
     syncToMongo(u, userData.phone);
   }, []);
 
+  // Optimistic partial update — no async calls needed
+  const updateUser = useCallback((partial) => {
+    setUser(prev => prev ? { ...prev, ...partial } : prev);
+  }, []);
+
   const logout = useCallback(async () => {
     await signOut(auth);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, syncUser, isLoggedIn: !!user }}>
+    <AuthContext.Provider value={{ user, loading, logout, syncUser, updateUser, isLoggedIn: !!user }}>
       {children}
     </AuthContext.Provider>
   );

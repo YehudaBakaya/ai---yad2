@@ -236,9 +236,10 @@ const getAIMockResponse = (message, role, listingPrice, history, sellerNotes = n
     }
 
     // ── No specific amount, general message ────────────────────────────────
-    // Round 1-2: Value argument
+    // Make a small additional concession from the last AI offer
+    const smallDrop = cleanPrice(lp * 0.02);
+    const counter   = clamp(lastAIOffer - smallDrop);
     if (round <= 2) {
-      const counter = clamp(lp * (0.96 - round * 0.02));
       return {
         message: pick([
           `אני שמח לנהל משא ומתן, אבל תן לי קודם להסביר למה המחיר הוגן. 🧐\n\nהמוצר הזה במצב ${sellerNotes?.condition || 'מצוין'}, כולל את כל האביזרים, ומחירי השוק מאשרים שאנחנו בטווח הנכון. ₪${counter.toLocaleString()} — מה אתה מציע?`,

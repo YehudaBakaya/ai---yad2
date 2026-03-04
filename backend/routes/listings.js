@@ -165,10 +165,49 @@ router.post('/', optionalAuth, async (req, res) => {
   }
 });
 
+// ── PATCH /api/listings/seller — bulk-update seller info for a user ───────────
+router.patch('/seller', async (req, res) => {
+  try {
+    const { userId, seller } = req.body;
+    if (!userId || !seller) return res.status(400).json({ error: 'נתונים חסרים' });
+    if (isConnected()) {
+      await Listing.updateMany({ userId }, { $set: { seller } });
+      return res.json({ ok: true });
+    }
+    inMemory.forEach(l => { if (l.userId === userId) Object.assign(l.seller, seller); });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('PATCH /listings/seller error:', err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+// ── PATCH /api/listings/:id/views ─────────────────────────────────────────────
+router.patch('/:id/views', async (req, res) => {
+  try {
+    if (isConnected()) {
+      const doc = await Listing.findByIdAndUpdate(
+        req.params.id,
+        { $inc: { views: 1 } },
+        { new: true }
+      );
+      if (!doc) return res.status(404).json({ error: 'רישום לא נמצא' });
+      return res.json({ views: doc.views });
+    }
+    const listing = inMemory.find(l => l.id === req.params.id);
+    if (!listing) return res.status(404).json({ error: 'רישום לא נמצא' });
+    listing.views = (listing.views || 0) + 1;
+    res.json({ views: listing.views });
+  } catch (err) {
+    console.error('PATCH /listings/:id/views error:', err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 // ── PUT /api/listings/:id ─────────────────────────────────────────────────────
 router.put('/:id', optionalAuth, async (req, res) => {
   try {
-    const allowed = ['title', 'price', 'location', 'condition', 'description', 'images'];
+    const allowed = ['title', 'price', 'location', 'condition', 'description', 'images', 'isActive', 'seller'];
     const updates = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
 
