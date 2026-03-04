@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight, MapPin, Tag, FileText, Bot, Sparkles, X, Upload } from 'lucide-react';
 import SmartDescription from '../components/SmartDescription';
 import SellerInterview from '../components/SellerInterview';
-import { uploadImage } from '../services/firestoreService';
 import { listingsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -95,17 +94,8 @@ export default function CreateListing() {
     if (!validateStep()) return;
     setLoading(true);
     try {
-      // Try uploading images to Firebase Storage (best effort)
-      let imageUrls = [];
-      if (images.length > 0) {
-        try {
-          imageUrls = await Promise.all(
-            images.map((img, i) => uploadImage(img.dataUrl, `listings/${Date.now()}_${i}`))
-          );
-        } catch {
-          // Storage not available — listing saved without images
-        }
-      }
+      // Send images as base64 dataURLs — stored directly in MongoDB
+      const imageUrls = images.map(img => img.dataUrl);
 
       await listingsAPI.create({
         ...formData,
