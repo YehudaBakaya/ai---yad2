@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, CheckCircle, XCircle, TrendingDown, Clock, Loader2, Phone } from 'lucide-react';
-import { aiAPI, api } from '../services/api';
+import { aiAPI } from '../services/api';
+import api from '../services/api';
 import { createDeal, subscribeToDeal } from '../services/firestoreService';
 import { useAuth } from '../contexts/AuthContext';
 
