@@ -7,16 +7,18 @@ import PriceAnalysis from '../components/PriceAnalysis';
 import ListingCard from '../components/ListingCard';
 import { listingsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useFavorites } from '../hooks/useFavorites';
 
 export default function ListingDetail() {
   const { id } = useParams();
   const { isLoggedIn, user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [listing, setListing]           = useState(null);
   const [loading, setLoading]           = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [similarListings, setSimilarListings] = useState([]);
-  const [saved, setSaved]               = useState(false);
   const [heartAnim, setHeartAnim]       = useState(false);
+  const [copied, setCopied]             = useState(false);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -62,9 +64,23 @@ export default function ListingDetail() {
   const prevImage = () => setCurrentImageIndex((p) => (p - 1 + listing.images.length) % listing.images.length);
 
   const toggleSave = () => {
-    setSaved(!saved);
+    if (listing) toggleFavorite(listing);
     setHeartAnim(true);
     setTimeout(() => setHeartAnim(false), 300);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = listing?.title || 'מודעה ביד2 AI';
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); return; } catch {}
+    }
+    // fallback — copy to clipboard
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
   };
 
   // האם המשתמש המחובר הוא הבעלים של המוצר?
@@ -143,15 +159,25 @@ export default function ListingDetail() {
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={toggleSave}
+                    title={isFavorite(listing.id) ? 'הסר ממועדפים' : 'שמור למועדפים'}
                     className="bg-slate-700 hover:bg-slate-600 text-white p-2.5 rounded-xl transition-all hover:scale-110"
                   >
                     <Heart
                       size={20}
-                      className={`transition-colors ${heartAnim ? 'animate-heartbeat' : ''} ${saved ? 'fill-red-500 text-red-500' : ''}`}
+                      className={`transition-colors ${heartAnim ? 'animate-heartbeat' : ''} ${isFavorite(listing.id) ? 'fill-red-500 text-red-500' : ''}`}
                     />
                   </button>
-                  <button className="bg-slate-700 hover:bg-slate-600 text-white p-2.5 rounded-xl transition-all hover:scale-110">
+                  <button
+                    onClick={handleShare}
+                    title="שתף מודעה"
+                    className="relative bg-slate-700 hover:bg-slate-600 text-white p-2.5 rounded-xl transition-all hover:scale-110"
+                  >
                     <Share2 size={20} />
+                    {copied && (
+                      <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-700 text-emerald-400 text-xs font-medium px-2 py-1 rounded-lg whitespace-nowrap border border-emerald-500/30 shadow-lg">
+                        הועתק!
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>

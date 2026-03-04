@@ -11,6 +11,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import MyListings from './pages/MyListings';
 import Profile from './pages/Profile';
+import DealHistory from './pages/DealHistory';
+import Favorites from './pages/Favorites';
 
 function App() {
   return (
@@ -35,6 +37,12 @@ function App() {
             } />
             <Route path="/profile" element={
               <ProtectedRoute><Profile /></ProtectedRoute>
+            } />
+            <Route path="/history" element={
+              <ProtectedRoute><DealHistory /></ProtectedRoute>
+            } />
+            <Route path="/favorites" element={
+              <ProtectedRoute><Favorites /></ProtectedRoute>
             } />
           </Routes>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 import { subscribeToListingDeals, updateDeal } from '../services/firestoreService';
+import { listingsAPI } from '../services/api';
 
 /**
  * SellerDealsPanel — פאנל ניהול עסקאות למוכר
@@ -22,6 +23,13 @@ export default function SellerDealsPanel({ listingId }) {
   const handleDecision = async (dealId, status) => {
     try {
       await updateDeal(dealId, status);
+      // When approved — hide the listing from the site
+      if (status === 'approved') {
+        const deal = deals.find(d => d.id === dealId);
+        if (deal?.listingId) {
+          listingsAPI.update(deal.listingId, { isActive: false }).catch(() => {});
+        }
+      }
       // onSnapshot will update automatically; update locally for instant feedback
       setDeals(prev => prev.map(d => d.id === dealId ? { ...d, status } : d));
     } catch {}

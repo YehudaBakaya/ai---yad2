@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, List, Plus, LogOut, LayoutList, ChevronDown, UserCircle } from 'lucide-react';
+import { Home, List, Plus, LogOut, LayoutList, ChevronDown, UserCircle, History, Heart } from 'lucide-react';
+import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeUserPendingDeals } from '../services/firestoreService';
 
 export default function Navbar() {
   const { pathname } = useLocation();
   const { user, isLoggedIn, logout } = useAuth();
+  const { favoritesList } = useFavorites();
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingDeals, setPendingDeals] = useState(0);
   const menuRef = useRef(null);
@@ -106,6 +108,31 @@ export default function Navbar() {
                           {pendingDeals}
                         </span>
                       )}
+                    </Link>
+
+                    <Link
+                      to="/favorites"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center justify-between gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700/60 hover:text-white transition-colors text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Heart size={15} className="text-red-400" />
+                        המועדפים שלי
+                      </div>
+                      {favoritesList.length > 0 && (
+                        <span className="bg-red-500/80 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">
+                          {favoritesList.length}
+                        </span>
+                      )}
+                    </Link>
+
+                    <Link
+                      to="/history"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700/60 hover:text-white transition-colors text-sm"
+                    >
+                      <History size={15} className="text-emerald-400" />
+                      היסטוריית עסקאות
                     </Link>
 
                     <Link

@@ -250,6 +250,22 @@ export const subscribeToListingDeals = (listingId, callback) => {
   });
 };
 
+export const getBuyerDeals = async (userId) => {
+  const q = query(collection(db, 'deals'), where('buyerId', '==', userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
+};
+
+export const getSellerDeals = async (userId) => {
+  const q = query(collection(db, 'deals'), where('sellerId', '==', userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
+};
+
 // ── Demo seed ─────────────────────────────────────────────────────────────────
 // מוסיף מספר מודעות לדוגמה ל-Firestore אם הקולקציה ריקה.
 

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Eye, MapPin, Calendar, Star, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useFavorites } from '../hooks/useFavorites';
 
 export default function ListingCard({ listing }) {
-  const [saved, setSaved] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const saved = isFavorite(listing.id);
   const [heartAnim, setHeartAnim] = useState(false);
 
   const formatDate = (date) => {
@@ -20,7 +22,7 @@ export default function ListingCard({ listing }) {
 
   const toggleSave = (e) => {
     e.preventDefault();
-    setSaved(!saved);
+    toggleFavorite(listing);
     setHeartAnim(true);
     setTimeout(() => setHeartAnim(false), 300);
   };
