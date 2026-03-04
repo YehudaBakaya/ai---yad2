@@ -43,14 +43,21 @@ export default function Home() {
     // 2. Fetch fresh from Firestore in background
     const fetchFresh = async () => {
       try {
-        if (!localStorage.getItem('yad2_seeded')) {
-          await seedDemoListings();
-          localStorage.setItem('yad2_seeded', '1');
-        }
+        // Fetch immediately — don't block on seeding
         const { results } = await getListings();
         const fresh = results.slice(0, 6);
         setListings(fresh);
         localStorage.setItem(FEATURED_CACHE, JSON.stringify(toCache(fresh)));
+
+        // If empty and not yet seeded — seed in background then re-fetch
+        if (fresh.length === 0 && !localStorage.getItem('yad2_seeded')) {
+          localStorage.setItem('yad2_seeded', '1');
+          await seedDemoListings();
+          const { results: seeded } = await getListings();
+          const seededFresh = seeded.slice(0, 6);
+          setListings(seededFresh);
+          localStorage.setItem(FEATURED_CACHE, JSON.stringify(toCache(seededFresh)));
+        }
       } catch (error) {
         console.error('Error fetching listings:', error);
       } finally {
