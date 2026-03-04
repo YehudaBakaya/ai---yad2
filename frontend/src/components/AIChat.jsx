@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, CheckCircle, XCircle, TrendingDown, Clock, Loader2, Phone } from 'lucide-react';
-import { aiAPI } from '../services/api';
+import { aiAPI, api } from '../services/api';
 import { createDeal, subscribeToDeal } from '../services/firestoreService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
  * כשמגיעים לעסקה, ה-AI שולח את ההצעה למוכר לאישור.
  * sellerContact מוצג לקונה רק לאחר אישור המוכר.
  */
-export default function AIChat({ listingId, listingTitle, listingPrice, sellerContact }) {
+export default function AIChat({ listingId, listingTitle, listingPrice, sellerContact, sellerNotes }) {
   const { user } = useAuth();
 
   const [messages, setMessages] = useState([
@@ -76,6 +76,7 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
         listingPrice,
         history: messages,
         role: 'seller', // AI תמיד מייצג את המוכר
+        sellerNotes: sellerNotes || null,
       });
 
       const { message, currentOffer: newOffer, dealReached: deal, suggestedReplies: replies } = res.data;
@@ -121,6 +122,18 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
       });
       setDealId(deal.id);
       setDealStatus('pending');
+
+      // Send email notification to seller (fire-and-forget)
+      if (sellerContact?.email) {
+        api.post('/notify/new-deal', {
+          sellerEmail:  sellerContact.email,
+          sellerName:   sellerContact.name,
+          buyerName:    user?.name || 'קונה אנונימי',
+          listingTitle,
+          agreedPrice:  currentOffer,
+          listingPrice,
+        }).catch(() => {});
+      }
     } catch {
       alert('שגיאה בשליחת ההצעה. נסה שוב.');
     } finally {

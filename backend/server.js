@@ -8,6 +8,7 @@ import { connectDB } from './db.js';
 import listingsRouter from './routes/listings.js';
 import aiRouter from './routes/ai.js';
 import authRouter from './routes/auth.js';
+import notifyRouter from './routes/notify.js';
 import { verifyToken } from './middleware/auth.js';
 
 dotenv.config();
@@ -49,8 +50,9 @@ app.get('/api/health', (req, res) => {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',     authRouter);
-app.use('/api/listings', listingsRouter);   // GET routes — ללא auth
+app.use('/api/listings', listingsRouter);
 app.use('/api/ai',       aiRouter);
+app.use('/api/notify',   notifyRouter);
 
 // POST /api/listings מוגן — צריך להיות מחובר
 // (אפשר להוסיף verifyToken ישירות בrouter אם מעדיפים)

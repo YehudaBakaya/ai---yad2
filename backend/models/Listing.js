@@ -51,9 +51,10 @@ const listingSchema = new mongoose.Schema({
     email:  { type: String, default: '' },
   },
 
+  sellerNotes: { type: mongoose.Schema.Types.Mixed, default: null },
   views:  { type: Number, default: 0 },
   rating: { type: Number, default: null, min: 0, max: 5 },
-  userId:   { type: String, default: null },   // Firebase UID of owner
+  userId:   { type: String, default: null },
   isActive: { type: Boolean, default: true },
 }, {
   timestamps: true,

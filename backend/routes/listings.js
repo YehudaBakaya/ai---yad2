@@ -139,6 +139,7 @@ router.post('/', optionalAuth, async (req, res) => {
         location: location || 'לא צוין',
         condition: condition || 'טוב',
         images: images?.length > 0 ? images : ['https://images.unsplash.com/photo-1540932954986-b06535f787f6?w=600'],
+        sellerNotes: sellerNotes || null,
         seller, userId,
         views: 0, rating: 4.5,
       });

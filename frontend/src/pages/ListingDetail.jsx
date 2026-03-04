@@ -290,6 +290,7 @@ export default function ListingDetail() {
                     listingTitle={listing.title}
                     listingPrice={listing.price}
                     sellerContact={listing.seller}
+                    sellerNotes={listing.sellerNotes || null}
                   />
                 </div>
               </>

@@ -11,6 +11,8 @@ export default function Navbar() {
   const { favoritesList } = useFavorites();
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingDeals, setPendingDeals] = useState(0);
+  const [dealToast, setDealToast] = useState(false);
+  const prevDealsRef = useRef(0);
   const menuRef = useRef(null);
 
   // סגור dropdown בלחיצה מחוץ
@@ -20,16 +22,44 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Subscribe to pending deals for notification badge
+  // Subscribe to pending deals — show popup when count increases
   useEffect(() => {
     if (!user?.id) { setPendingDeals(0); return; }
-    const unsub = subscribeUserPendingDeals(user.id, setPendingDeals);
+    const unsub = subscribeUserPendingDeals(user.id, (count) => {
+      if (count > prevDealsRef.current) {
+        setDealToast(true);
+        setTimeout(() => setDealToast(false), 5000);
+      }
+      prevDealsRef.current = count;
+      setPendingDeals(count);
+    });
     return unsub;
   }, [user?.id]);
 
   const isActive = (path) => path === '/' ? pathname === '/' : pathname.startsWith(path);
 
   return (
+    <>
+    {/* Deal arrival toast */}
+    {dealToast && (
+      <div
+        className="fixed top-4 right-4 z-50 animate-fadeIn flex items-center gap-3 bg-amber-500 text-white px-4 py-3 rounded-2xl shadow-xl shadow-amber-500/30 cursor-pointer max-w-xs"
+        onClick={() => { setDealToast(false); }}
+      >
+        <span className="text-xl">🔔</span>
+        <div>
+          <p className="font-bold text-sm leading-tight">הצעה חדשה ממתינה!</p>
+          <p className="text-xs text-amber-100">קונה שלח הצעה למודעה שלך</p>
+        </div>
+        <Link
+          to="/my-listings"
+          onClick={() => setDealToast(false)}
+          className="text-xs font-bold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
+        >
+          צפה →
+        </Link>
+      </div>
+    )}
     <nav className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-40 shadow-lg shadow-black/20">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
 
@@ -174,6 +204,7 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+    </>
   );
 }
 
