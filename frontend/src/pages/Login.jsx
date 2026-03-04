@@ -26,22 +26,22 @@ export default function Login() {
 
   // Handle redirect result from Google OAuth (after page reload back from Google)
   useEffect(() => {
-    setLoading(true);
     getRedirectResult(auth)
       .then(async (result) => {
         if (result?.user) {
-          await syncUser();
-          navigate(from, { replace: true });
+          setLoading(true);
+          try {
+            await syncUser();
+            navigate(from, { replace: true });
+          } catch {
+            setError('שגיאה בטעינת המשתמש');
+            setLoading(false);
+          }
         }
       })
       .catch((err) => {
-        if (err.code === 'auth/unauthorized-domain') {
-          setError('הדומיין לא מאושר — הוסף ל-Firebase Console → Auth → Authorized Domains');
-        } else if (err.code) {
-          setError(`שגיאת Google: ${err.code}`);
-        }
-      })
-      .finally(() => setLoading(false));
+        setError(`שגיאת Google: ${err.code || err.message || 'שגיאה לא ידועה'}`);
+      });
   }, []); // eslint-disable-line
 
   const set = (k, v) => { setForm(p => ({ ...p, [k]: v })); setError(''); };

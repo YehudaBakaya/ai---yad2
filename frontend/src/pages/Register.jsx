@@ -17,16 +17,20 @@ export default function Register() {
 
   // Handle redirect result from Google OAuth
   useEffect(() => {
-    setLoading(true);
     getRedirectResult(auth)
       .then(async (result) => {
         if (result?.user) {
-          await syncUser();
-          navigate('/');
+          setLoading(true);
+          try {
+            await syncUser();
+            navigate('/');
+          } catch {
+            setErrors({ submit: 'שגיאה בטעינת המשתמש' });
+            setLoading(false);
+          }
         }
       })
-      .catch((err) => setErrors({ submit: `שגיאת Google: ${err.code || err.message}` }))
-      .finally(() => setLoading(false));
+      .catch((err) => setErrors({ submit: `שגיאת Google: ${err.code || err.message || 'שגיאה לא ידועה'}` }));
   }, []); // eslint-disable-line
 
   const set = (k, v) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: '' })); };
