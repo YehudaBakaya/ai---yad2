@@ -141,6 +141,9 @@ export const getListings = async (filters = {}, afterDoc = null) => {
   }
   if (filters.condition) results = results.filter(l => l.condition === filters.condition);
 
+  // Hide sold / deactivated listings
+  results = results.filter(l => l.isActive !== false);
+
   results.sort((a, b) => (b.date?.toMillis?.() ?? 0) - (a.date?.toMillis?.() ?? 0));
 
   const lastDoc = !hasTextFilter && snapshot.docs.length === PAGE_SIZE
@@ -180,7 +183,7 @@ export const getSimilarListings = async (categoryEn, excludeId, maxCount = 3) =>
   const snapshot = await getDocs(q);
   return snapshot.docs
     .map(d => ({ id: d.id, ...d.data() }))
-    .filter(l => l.id !== excludeId)
+    .filter(l => l.id !== excludeId && l.isActive !== false)
     .slice(0, maxCount);
 };
 
