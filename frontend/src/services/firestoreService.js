@@ -52,6 +52,15 @@ export const getUserProfile = async (uid) => {
   return snap.exists() ? snap.data() : null;
 };
 
+export const getAllUsers = async () => {
+  const snapshot = await getDocs(collection(db, 'users'));
+  return snapshot.docs.map(d => ({ uid: d.id, ...d.data() }));
+};
+
+export const setUserAdmin = async (uid, isAdmin) => {
+  await setDoc(doc(db, 'users', uid), { isAdmin }, { merge: true });
+};
+
 // ── Listings ──────────────────────────────────────────────────────────────────
 
 export const createListing = async (data, user) => {
@@ -264,6 +273,34 @@ export const getSellerDeals = async (userId) => {
   return snapshot.docs
     .map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
+};
+
+// ── Ratings ───────────────────────────────────────────────────────────────────
+
+/** Submit or update a star rating (1-5) for a listing. Returns { avg, count }. */
+export const rateListing = async (listingId, userId, value) => {
+  const ratingId  = `${listingId}_${userId}`;
+  await setDoc(doc(db, 'ratings', ratingId), {
+    listingId, userId, value, updatedAt: serverTimestamp(),
+  }, { merge: true });
+
+  // Recalculate average across all ratings for this listing
+  const q = query(collection(db, 'ratings'), where('listingId', '==', listingId));
+  const snap = await getDocs(q);
+  const values = snap.docs.map(d => d.data().value);
+  const avg    = Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+  const count  = values.length;
+
+  // Update listing's rating fields in Firestore
+  await updateDoc(doc(db, 'listings', listingId), { rating: avg, ratingCount: count });
+
+  return { avg, count };
+};
+
+/** Get the current user's rating for a listing (null if not rated). */
+export const getUserRating = async (listingId, userId) => {
+  const snap = await getDoc(doc(db, 'ratings', `${listingId}_${userId}`));
+  return snap.exists() ? snap.data().value : null;
 };
 
 // ── Demo seed ─────────────────────────────────────────────────────────────────

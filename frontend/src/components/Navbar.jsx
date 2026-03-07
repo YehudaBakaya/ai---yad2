@@ -1,28 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, List, Plus, LogOut, LayoutList, ChevronDown, UserCircle, History, Heart } from 'lucide-react';
+import { Home, List, Plus, LogOut, LayoutList, ChevronDown, UserCircle, History, Heart, Sun, Moon, Shield } from 'lucide-react';
 import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { subscribeUserPendingDeals } from '../services/firestoreService';
 
 export default function Navbar() {
   const { pathname } = useLocation();
   const { user, isLoggedIn, logout } = useAuth();
   const { favoritesList } = useFavorites();
+  const { isDark, toggle: toggleTheme } = useTheme();
+  const { t, toggleLang } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingDeals, setPendingDeals] = useState(0);
   const [dealToast, setDealToast] = useState(false);
   const prevDealsRef = useRef(0);
   const menuRef = useRef(null);
 
-  // סגור dropdown בלחיצה מחוץ
   useEffect(() => {
     const handler = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Subscribe to pending deals — show popup when count increases
   useEffect(() => {
     if (!user?.id) { setPendingDeals(0); return; }
     const unsub = subscribeUserPendingDeals(user.id, (count) => {
@@ -48,15 +50,15 @@ export default function Navbar() {
       >
         <span className="text-xl">🔔</span>
         <div>
-          <p className="font-bold text-sm leading-tight">הצעה חדשה ממתינה!</p>
-          <p className="text-xs text-amber-100">קונה שלח הצעה למודעה שלך</p>
+          <p className="font-bold text-sm leading-tight">{t('navbar.dealToast')}</p>
+          <p className="text-xs text-amber-100">{t('navbar.dealDesc')}</p>
         </div>
         <Link
           to="/my-listings"
           onClick={() => setDealToast(false)}
           className="text-xs font-bold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
         >
-          צפה →
+          {t('navbar.view')}
         </Link>
       </div>
     )}
@@ -66,21 +68,39 @@ export default function Navbar() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-all duration-300 group-hover:scale-110">
-            <span className="text-white font-extrabold text-lg">Y</span>
+            <span className="text-white font-extrabold text-[11px] tracking-tight">S2B</span>
           </div>
           <span className="text-white font-extrabold text-xl tracking-tight">
-            יד<span className="text-cyan-400">2</span> <span className="text-violet-400">AI</span>
+            S<span className="text-cyan-400">2</span>B <span className="text-violet-400">AI</span>
           </span>
         </Link>
 
         {/* Center links */}
         <div className="flex items-center gap-1">
-          <NavLink to="/"        icon={<Home size={17} />} label="דף הבית" active={isActive('/')} />
-          <NavLink to="/listings" icon={<List size={17} />} label="מודעות"  active={isActive('/listings')} />
+          <NavLink to="/"        icon={<Home size={17} />} label={t('navbar.home')}     active={isActive('/')} />
+          <NavLink to="/listings" icon={<List size={17} />} label={t('navbar.listings')} active={isActive('/listings')} />
         </div>
 
-        {/* Right side — auth */}
+        {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Language toggle */}
+          <button
+            onClick={toggleLang}
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-gray-400 hover:text-white transition-all text-xs font-bold"
+            title="Switch language"
+          >
+            {t('navbar.lang')}
+          </button>
+
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-gray-400 hover:text-white transition-all"
+            title={isDark ? t('navbar.lightMode') : t('navbar.darkMode')}
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
           {isLoggedIn ? (
             <>
               {/* Create listing */}
@@ -89,7 +109,7 @@ export default function Navbar() {
                 className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 text-sm shadow-md shadow-violet-500/20 hover:shadow-violet-500/40 transition-shadow"
               >
                 <Plus size={16} />
-                <span className="hidden sm:inline">פרסם</span>
+                <span className="hidden sm:inline">{t('navbar.publish')}</span>
               </Link>
 
               {/* User dropdown */}
@@ -98,7 +118,6 @@ export default function Navbar() {
                   onClick={() => setMenuOpen(!menuOpen)}
                   className="relative flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 px-3 py-2 rounded-xl transition-all"
                 >
-                  {/* Notification badge */}
                   {pendingDeals > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow-md shadow-amber-500/40 animate-pulse">
                       {pendingDeals > 9 ? '9+' : pendingDeals}
@@ -107,9 +126,7 @@ export default function Navbar() {
                   {user?.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-6 h-6 rounded-full" />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-bold">
-                      {user?.name?.[0]?.toUpperCase() || '?'}
-                    </div>
+                    <UserCircle size={22} className="text-gray-300" />
                   )}
                   <span className="hidden sm:inline text-sm text-white font-medium max-w-24 truncate">
                     {user?.name}
@@ -131,7 +148,7 @@ export default function Navbar() {
                     >
                       <div className="flex items-center gap-2">
                         <LayoutList size={15} className="text-violet-400" />
-                        המודעות שלי
+                        {t('navbar.myListings')}
                       </div>
                       {pendingDeals > 0 && (
                         <span className="bg-amber-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">
@@ -147,7 +164,7 @@ export default function Navbar() {
                     >
                       <div className="flex items-center gap-2">
                         <Heart size={15} className="text-red-400" />
-                        המועדפים שלי
+                        {t('navbar.favorites')}
                       </div>
                       {favoritesList.length > 0 && (
                         <span className="bg-red-500/80 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">
@@ -162,7 +179,7 @@ export default function Navbar() {
                       className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700/60 hover:text-white transition-colors text-sm"
                     >
                       <History size={15} className="text-emerald-400" />
-                      היסטוריית עסקאות
+                      {t('navbar.history')}
                     </Link>
 
                     <Link
@@ -171,15 +188,26 @@ export default function Navbar() {
                       className="flex items-center gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700/60 hover:text-white transition-colors text-sm"
                     >
                       <UserCircle size={15} className="text-cyan-400" />
-                      הפרופיל שלי
+                      {t('navbar.profile')}
                     </Link>
+
+                    {user?.isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 transition-colors text-sm border-t border-slate-700"
+                      >
+                        <Shield size={15} />
+                        {t('navbar.admin')}
+                      </Link>
+                    )}
 
                     <button
                       onClick={() => { logout(); setMenuOpen(false); }}
                       className="w-full flex items-center gap-2 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors text-sm border-t border-slate-700"
                     >
                       <LogOut size={15} />
-                      התנתק
+                      {t('navbar.logout')}
                     </button>
                   </div>
                 )}
@@ -191,13 +219,13 @@ export default function Navbar() {
                 to="/login"
                 className="text-gray-300 hover:text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-slate-800 transition-all"
               >
-                התחבר
+                {t('navbar.login')}
               </Link>
               <Link
                 to="/register"
                 className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg text-sm shadow-md shadow-violet-500/20"
               >
-                הרשמה
+                {t('navbar.register')}
               </Link>
             </>
           )}

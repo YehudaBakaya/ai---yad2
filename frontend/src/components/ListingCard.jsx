@@ -2,22 +2,23 @@ import React, { useState } from 'react';
 import { Eye, MapPin, Calendar, Star, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function ListingCard({ listing }) {
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { t, tCond, tCat, lang } = useLanguage();
   const saved = isFavorite(listing.id);
   const [heartAnim, setHeartAnim] = useState(false);
 
   const formatDate = (date) => {
-    // Handle Firestore Timestamp or plain Date/string
     const d = date?.toDate ? date.toDate() : new Date(date);
     if (isNaN(d)) return '';
     const diff = Date.now() - d.getTime();
-    if (diff < 60000)    return 'זה עתה';
-    if (diff < 3600000)  return `לפני ${Math.floor(diff / 60000)} דקות`;
-    if (diff < 86400000) return `לפני ${Math.floor(diff / 3600000)} שעות`;
-    if (diff < 604800000)return `לפני ${Math.floor(diff / 86400000)} ימים`;
-    return d.toLocaleDateString('he-IL');
+    if (diff < 60000)    return t('card.justNow');
+    if (diff < 3600000)  return t('card.minsAgo',  { n: Math.floor(diff / 60000) });
+    if (diff < 86400000) return t('card.hoursAgo', { n: Math.floor(diff / 3600000) });
+    if (diff < 604800000)return t('card.daysAgo',  { n: Math.floor(diff / 86400000) });
+    return d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US');
   };
 
   const toggleSave = (e) => {
@@ -35,6 +36,8 @@ export default function ListingCard({ listing }) {
     'דורש תיקון': 'bg-red-500/20 text-red-300 border border-red-500/40',
   };
 
+  const categoryLabel = listing.categoryEn ? tCat(listing.categoryEn) : listing.category;
+
   return (
     <Link to={`/listings/${listing.id}`}>
       <div className="card-hover bg-slate-800 border border-slate-700 rounded-xl overflow-hidden cursor-pointer animate-fadeIn group">
@@ -46,13 +49,11 @@ export default function ListingCard({ listing }) {
             alt={listing.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
-
-          {/* Gradient overlay on hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent group-hover:from-black/50 transition-all duration-300" />
 
           {/* Category badge */}
           <div className="absolute top-2 right-2 bg-gradient-to-r from-violet-600/90 to-indigo-600/90 backdrop-blur text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg shadow-violet-500/30">
-            {listing.category}
+            {categoryLabel}
           </div>
 
           {/* Save button */}
@@ -66,31 +67,26 @@ export default function ListingCard({ listing }) {
             />
           </button>
 
-          {/* Free badge */}
           {listing.price === 0 && (
             <div className="absolute bottom-2 left-2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              חינם!
+              {t('card.free')}
             </div>
           )}
         </div>
 
         {/* Content */}
         <div className="p-4">
-
-          {/* Title */}
           <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-violet-300 transition-colors duration-200">
             {listing.title}
           </h3>
 
-          {/* Price */}
           <div className="text-2xl font-extrabold mb-3 bg-gradient-to-r from-violet-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
-            {listing.price === 0 ? 'חינם' : `₪${listing.price?.toLocaleString()}`}
+            {listing.price === 0 ? t('card.free') : `₪${listing.price?.toLocaleString()}`}
           </div>
 
-          {/* Condition & Rating */}
           <div className="flex gap-2 mb-3 text-xs">
             <span className={`px-2.5 py-1 rounded-full font-medium ${conditionColor[listing.condition] || 'bg-slate-700 text-gray-300'}`}>
-              {listing.condition}
+              {tCond(listing.condition)}
             </span>
             {listing.rating && (
               <span className="flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full font-medium">
@@ -100,7 +96,6 @@ export default function ListingCard({ listing }) {
             )}
           </div>
 
-          {/* Meta info */}
           <div className="flex flex-col gap-1.5 text-xs text-gray-400 border-t border-slate-700/60 pt-3">
             <div className="flex items-center gap-1.5">
               <MapPin size={13} className="text-cyan-400 shrink-0" />

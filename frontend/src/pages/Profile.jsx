@@ -1,14 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Save, Camera, ArrowRight } from 'lucide-react';
+import { User, Mail, Phone, Save, Camera, ArrowRight, UserCircle } from 'lucide-react';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, uploadImage } from '../services/firestoreService';
 import { listingsAPI } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Profile() {
   const { user, syncUser, updateUser } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const fileRef  = useRef(null);
 
@@ -32,7 +34,7 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { setError('שם הוא שדה חובה'); return; }
+    if (!form.name.trim()) { setError(t('profile.errName')); return; }
     setSaving(true);
     setError('');
     try {
@@ -76,13 +78,11 @@ export default function Profile() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch {
-      setError('שגיאה בשמירה. נסה שוב.');
+      setError(t('profile.errSave'));
     } finally {
       setSaving(false);
     }
   };
-
-  const initials = (user?.name || '?')[0].toUpperCase();
 
   return (
     <div className="min-h-screen bg-slate-900 py-10 px-4">
@@ -94,16 +94,16 @@ export default function Profile() {
           className="flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-6 transition-colors group"
         >
           <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
-          חזור
+          {t('profile.back')}
         </button>
 
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center gap-3 justify-center mb-1">
             <div className="w-1 h-7 bg-gradient-to-b from-violet-500 to-cyan-500 rounded-full" />
-            <h1 className="text-2xl font-extrabold text-white">הפרופיל שלי</h1>
+            <h1 className="text-2xl font-extrabold text-white">{t('profile.title')}</h1>
           </div>
-          <p className="text-gray-400 text-sm">עדכן את פרטיך האישיים</p>
+          <p className="text-gray-400 text-sm">{t('profile.sub')}</p>
         </div>
 
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-7 shadow-xl shadow-black/30 space-y-6">
@@ -115,7 +115,7 @@ export default function Profile() {
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-white text-3xl font-extrabold">{initials}</span>
+                  <UserCircle size={52} className="text-white/70" />
                 )}
               </div>
               <button
@@ -137,14 +137,14 @@ export default function Profile() {
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">שם מלא</label>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">{t('profile.name')}</label>
             <div className="relative">
               <User size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 value={form.name}
                 onChange={e => { setForm(p => ({ ...p, name: e.target.value })); setError(''); }}
-                placeholder="שם מלא"
+                placeholder={t('profile.name')}
                 className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 transition-all"
               />
             </div>
@@ -152,7 +152,7 @@ export default function Profile() {
 
           {/* Email (read-only) */}
           <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">אימייל</label>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">{t('profile.email')}</label>
             <div className="relative">
               <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -162,12 +162,12 @@ export default function Profile() {
                 className="w-full bg-slate-700/50 border border-slate-700 rounded-xl pr-10 pl-4 py-2.5 text-gray-500 text-sm cursor-not-allowed"
               />
             </div>
-            <p className="text-gray-600 text-xs mt-1">לא ניתן לשנות אימייל</p>
+            <p className="text-gray-600 text-xs mt-1">{t('profile.emailNote')}</p>
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">טלפון</label>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">{t('profile.phone')}</label>
             <div className="relative">
               <Phone size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -188,7 +188,7 @@ export default function Profile() {
           )}
           {success && (
             <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-xl px-4 py-2.5 text-emerald-400 text-sm animate-fadeIn">
-              ✅ הפרופיל עודכן בהצלחה
+              {t('profile.success')}
             </div>
           )}
 
@@ -199,8 +199,8 @@ export default function Profile() {
             className="w-full btn-shimmer text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-60"
           >
             {saving
-              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> שומר...</>
-              : <><Save size={16} /> שמור שינויים</>}
+              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('profile.saving')}</>
+              : <><Save size={16} /> {t('profile.save')}</>}
           </button>
         </div>
       </div>

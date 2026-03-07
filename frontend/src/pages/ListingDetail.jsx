@@ -8,6 +8,7 @@ import ListingCard from '../components/ListingCard';
 import { listingsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
+import { rateListing, getUserRating } from '../services/firestoreService';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -19,6 +20,10 @@ export default function ListingDetail() {
   const [similarListings, setSimilarListings] = useState([]);
   const [heartAnim, setHeartAnim]       = useState(false);
   const [copied, setCopied]             = useState(false);
+  const [userRating, setUserRating]     = useState(null);
+  const [ratingAvg, setRatingAvg]       = useState(null);
+  const [ratingCount, setRatingCount]   = useState(0);
+  const [ratingLoading, setRatingLoading] = useState(false);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -27,6 +32,9 @@ export default function ListingDetail() {
         setListing(data);
         // Increment view count fire-and-forget
         listingsAPI.incrementViews(id).catch(() => {});
+        // Load existing rating info
+        setRatingAvg(data.rating || null);
+        setRatingCount(data.ratingCount || 0);
         if (data?.categoryEn) {
           const { data: allSimilar } = await listingsAPI.getAll({ category: data.categoryEn });
           setSimilarListings(allSimilar.filter(l => l.id !== id).slice(0, 3));
@@ -39,6 +47,29 @@ export default function ListingDetail() {
     };
     fetchListing();
   }, [id]);
+
+  // Load user's existing rating
+  useEffect(() => {
+    if (!user?.id || !id) return;
+    getUserRating(id, user.id).then(r => setUserRating(r)).catch(() => {});
+  }, [user?.id, id]);
+
+  const handleRate = async (value) => {
+    if (!user?.id || ratingLoading) return;
+    setRatingLoading(true);
+    try {
+      const { avg, count } = await rateListing(id, user.id, value);
+      setUserRating(value);
+      setRatingAvg(avg);
+      setRatingCount(count);
+      // Also sync to MongoDB listing (fire-and-forget)
+      listingsAPI.update(id, { rating: avg }).catch(() => {});
+    } catch (err) {
+      console.error('Rating error:', err);
+    } finally {
+      setRatingLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -197,6 +228,65 @@ export default function ListingDetail() {
                 <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-sm">
                   {listing.description}
                 </p>
+              </div>
+
+              {/* Star Rating */}
+              <div className="mb-5 border-t border-slate-700 pt-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">דירוג</h3>
+                  {ratingAvg && (
+                    <span className="text-xs text-gray-400">
+                      ממוצע: <span className="text-yellow-400 font-bold">{ratingAvg}</span>
+                      <span className="text-gray-500"> ({ratingCount} דירוגים)</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Average display */}
+                <div className="flex items-center gap-1 mb-3">
+                  {[1,2,3,4,5].map(s => (
+                    <Star
+                      key={s}
+                      size={20}
+                      className={s <= Math.round(ratingAvg || listing.rating || 0)
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-600'}
+                    />
+                  ))}
+                  {!ratingAvg && !listing.rating && (
+                    <span className="text-xs text-gray-500 mr-2">עדיין אין דירוגים</span>
+                  )}
+                </div>
+
+                {/* Interactive rating — only for logged-in non-owners */}
+                {isLoggedIn && !isOwner && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-2">
+                      {userRating ? `הדירוג שלך: ${userRating} ⭐ — לחץ לעדכון` : 'דרג את המוצר:'}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      {[1,2,3,4,5].map(s => (
+                        <button
+                          key={s}
+                          onClick={() => handleRate(s)}
+                          disabled={ratingLoading}
+                          className="transition-transform hover:scale-125 active:scale-95 disabled:opacity-50"
+                        >
+                          <Star
+                            size={24}
+                            className={s <= (userRating || 0)
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-600 hover:text-yellow-300'}
+                          />
+                        </button>
+                      ))}
+                      {ratingLoading && <span className="text-xs text-gray-400 mr-2">שומר...</span>}
+                    </div>
+                  </div>
+                )}
+                {!isLoggedIn && (
+                  <p className="text-xs text-gray-500">התחבר כדי לדרג</p>
+                )}
               </div>
 
               {/* Meta */}

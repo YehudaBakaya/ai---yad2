@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Tag, TrendingUp, Plus, Clock, CheckCircle, XCircle, ChevronLeft, Pencil, Trash2, X, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { subscribeToListingDeals } from '../services/firestoreService';
 import { listingsAPI } from '../services/api';
 
@@ -17,6 +18,7 @@ function useListingDeals(listingId) {
 
 // ── Edit Modal ────────────────────────────────────────────────────────────────
 function EditModal({ listing, onClose, onSaved }) {
+  const { t, tCond } = useLanguage();
   const [form, setForm] = useState({
     title:    listing.title    || '',
     price:    listing.price    ?? '',
@@ -30,7 +32,7 @@ function EditModal({ listing, onClose, onSaved }) {
   const conditions = ['חדש', 'מעולה', 'טוב', 'סביר', 'דורש תיקון'];
 
   const handleSave = async () => {
-    if (!form.title.trim()) { setError('כותרת חובה'); return; }
+    if (!form.title.trim()) { setError(t('myListings.edit.errTitle')); return; }
     setSaving(true);
     try {
       await listingsAPI.update(listing.id, {
@@ -42,7 +44,7 @@ function EditModal({ listing, onClose, onSaved }) {
       });
       onSaved({ ...listing, ...form, price: parseFloat(form.price) || 0 });
     } catch {
-      setError('שגיאה בשמירה. נסה שוב.');
+      setError(t('myListings.edit.errSave'));
     } finally {
       setSaving(false);
     }
@@ -54,7 +56,7 @@ function EditModal({ listing, onClose, onSaved }) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-          <h2 className="font-bold text-white text-lg">עריכת מודעה</h2>
+          <h2 className="font-bold text-white text-lg">{t('myListings.edit.title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
             <X size={20} />
           </button>
@@ -63,7 +65,7 @@ function EditModal({ listing, onClose, onSaved }) {
         {/* Body */}
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5">כותרת *</label>
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('myListings.edit.listing')}</label>
             <input
               type="text"
               value={form.title}
@@ -74,7 +76,7 @@ function EditModal({ listing, onClose, onSaved }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1.5">מחיר (₪)</label>
+              <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('myListings.edit.price')}</label>
               <input
                 type="number"
                 value={form.price}
@@ -83,7 +85,7 @@ function EditModal({ listing, onClose, onSaved }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1.5">מיקום</label>
+              <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('myListings.edit.location')}</label>
               <input
                 type="text"
                 value={form.location}
@@ -94,7 +96,7 @@ function EditModal({ listing, onClose, onSaved }) {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5">מצב</label>
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('myListings.edit.condition')}</label>
             <div className="flex flex-wrap gap-2">
               {conditions.map(c => (
                 <button
@@ -106,14 +108,14 @@ function EditModal({ listing, onClose, onSaved }) {
                       ? 'bg-violet-500/20 border-violet-500 text-violet-300'
                       : 'bg-slate-700 border-slate-600 text-gray-400 hover:border-slate-500'}`}
                 >
-                  {c}
+                  {tCond(c)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1.5">תיאור</label>
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('myListings.edit.desc')}</label>
             <textarea
               value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
@@ -131,7 +133,7 @@ function EditModal({ listing, onClose, onSaved }) {
             onClick={onClose}
             className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 rounded-xl transition-all text-sm"
           >
-            ביטול
+            {t('myListings.edit.cancel')}
           </button>
           <button
             onClick={handleSave}
@@ -139,8 +141,8 @@ function EditModal({ listing, onClose, onSaved }) {
             className="flex-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
           >
             {saving
-              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> שומר...</>
-              : <><Check size={16} /> שמור שינויים</>}
+              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('myListings.edit.saving')}</>
+              : <><Check size={16} /> {t('myListings.edit.save')}</>}
           </button>
         </div>
       </div>
@@ -150,6 +152,7 @@ function EditModal({ listing, onClose, onSaved }) {
 
 // ── Delete Confirmation ───────────────────────────────────────────────────────
 function DeleteConfirm({ listing, onClose, onDeleted }) {
+  const { t } = useLanguage();
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -158,7 +161,7 @@ function DeleteConfirm({ listing, onClose, onDeleted }) {
       await listingsAPI.remove(listing.id);
       onDeleted(listing.id);
     } catch {
-      alert('שגיאה במחיקה. נסה שוב.');
+      alert(t('myListings.del.err'));
       setDeleting(false);
     }
   };
@@ -169,23 +172,23 @@ function DeleteConfirm({ listing, onClose, onDeleted }) {
         <div className="w-14 h-14 bg-red-500/20 border-2 border-red-500/50 rounded-full flex items-center justify-center mx-auto mb-4">
           <Trash2 size={24} className="text-red-400" />
         </div>
-        <h2 className="text-lg font-bold text-white mb-1">מחיקת מודעה</h2>
-        <p className="text-gray-400 text-sm mb-1">האם למחוק את המודעה?</p>
+        <h2 className="text-lg font-bold text-white mb-1">{t('myListings.del.title')}</h2>
+        <p className="text-gray-400 text-sm mb-1">{t('myListings.del.confirm')}</p>
         <p className="text-white font-semibold text-sm mb-5 line-clamp-1">"{listing.title}"</p>
-        <p className="text-red-400 text-xs mb-5">פעולה זו אינה ניתנת לביטול</p>
+        <p className="text-red-400 text-xs mb-5">{t('myListings.del.warn')}</p>
         <div className="flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 rounded-xl transition-all text-sm"
           >
-            ביטול
+            {t('myListings.del.cancel')}
           </button>
           <button
             onClick={handleDelete}
             disabled={deleting}
             className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-all text-sm"
           >
-            {deleting ? 'מוחק...' : 'מחק'}
+            {deleting ? t('myListings.del.loading') : t('myListings.del.btn')}
           </button>
         </div>
       </div>
@@ -195,6 +198,7 @@ function DeleteConfirm({ listing, onClose, onDeleted }) {
 
 // ── Single listing row ────────────────────────────────────────────────────────
 function ListingRow({ listing, onEdit, onDelete }) {
+  const { t, tCat } = useLanguage();
   const deals    = useListingDeals(listing.id);
   const pending  = deals.filter(d => d.status === 'pending').length;
   const approved = deals.filter(d => d.status === 'approved').length;
@@ -220,17 +224,17 @@ function ListingRow({ listing, onEdit, onDelete }) {
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <h3 className="font-bold text-white text-sm leading-snug line-clamp-2">{listing.title}</h3>
               <span className="shrink-0 text-sm font-extrabold text-violet-400">
-                {listing.price === 0 ? 'חינם' : `₪${listing.price?.toLocaleString()}`}
+                {listing.price === 0 ? t('common.free') : `₪${listing.price?.toLocaleString()}`}
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 mb-3">
               <span className="bg-violet-500/15 text-violet-300 border border-violet-500/30 px-2 py-0.5 rounded-full">
-                {listing.category}
+                {listing.categoryEn ? tCat(listing.categoryEn) : listing.category}
               </span>
               <span className="flex items-center gap-1">
                 <Eye size={11} className="text-cyan-400" />
-                {listing.views?.toLocaleString() || 0} צפיות
+                {listing.views?.toLocaleString() || 0} {t('myListings.views')}
               </span>
               <span className="text-gray-600">•</span>
               <span>{listing.location}</span>
@@ -243,51 +247,46 @@ function ListingRow({ listing, onEdit, onDelete }) {
               {pending > 0 && (
                 <span className="flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-bold px-2.5 py-1 rounded-full">
                   <Clock size={11} />
-                  {pending} ממתין
+                  {pending} {t('myListings.pending')}
                 </span>
               )}
               {approved > 0 && (
                 <span className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium px-2.5 py-1 rounded-full">
                   <CheckCircle size={11} />
-                  {approved} אושר
+                  {approved} {t('myListings.approved')}
                 </span>
               )}
               {rejected > 0 && (
                 <span className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium px-2.5 py-1 rounded-full">
                   <XCircle size={11} />
-                  {rejected} נדחה
+                  {rejected} {t('myListings.rejected')}
                 </span>
               )}
               {deals.length === 0 && (
-                <span className="text-xs text-gray-600">אין הצעות עדיין</span>
+                <span className="text-xs text-gray-600">{t('myListings.noOffers')}</span>
               )}
             </div>
 
             <div className="flex items-center gap-1">
-              {/* Edit */}
               <button
                 onClick={() => onEdit(listing)}
-                title="עריכה"
                 className="p-1.5 rounded-lg text-gray-400 hover:text-violet-300 hover:bg-violet-500/10 transition-all"
               >
                 <Pencil size={14} />
               </button>
 
-              {/* Delete */}
               <button
                 onClick={() => onDelete(listing)}
-                title="מחיקה"
                 className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
               >
                 <Trash2 size={14} />
               </button>
 
-              {/* Manage deals */}
               <Link
                 to={`/listings/${listing.id}`}
                 className="flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors mr-1"
               >
-                ניהול
+                {t('myListings.manage')}
                 <ChevronLeft size={13} />
               </Link>
             </div>
@@ -301,6 +300,7 @@ function ListingRow({ listing, onEdit, onDelete }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function MyListings() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [listings, setListings] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [editTarget, setEditTarget]   = useState(null);
@@ -331,25 +331,25 @@ export default function MyListings() {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <div className="w-1 h-7 bg-gradient-to-b from-violet-500 to-cyan-500 rounded-full" />
-              <h1 className="text-2xl font-extrabold text-white">המודעות שלי</h1>
+              <h1 className="text-2xl font-extrabold text-white">{t('myListings.title')}</h1>
             </div>
-            <p className="text-gray-400 text-sm mr-4">נהל את המודעות שפרסמת וראה הצעות ממתינות</p>
+            <p className="text-gray-400 text-sm mr-4">{t('myListings.sub')}</p>
           </div>
           <Link
             to="/create"
             className="btn-shimmer text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-violet-500/20"
           >
             <Plus size={16} />
-            <span className="hidden sm:inline">פרסם חדשה</span>
+            <span className="hidden sm:inline">{t('myListings.new')}</span>
           </Link>
         </div>
 
         {/* Stats bar */}
         {!loading && listings.length > 0 && (
           <div className="grid grid-cols-3 gap-3 mb-6 animate-fadeIn">
-            <StatCard label="מודעות"    value={listings.length}                             icon={<Tag size={16} className="text-violet-400" />}  color="violet" />
-            <StatCard label="סה״כ צפיות" value={totalViews.toLocaleString()}               icon={<Eye size={16} className="text-cyan-400" />}    color="cyan" />
-            <StatCard label="קטגוריות"  value={new Set(listings.map(l => l.categoryEn)).size} icon={<TrendingUp size={16} className="text-emerald-400" />} color="emerald" />
+            <StatCard label={t('myListings.stat.listings')} value={listings.length}                             icon={<Tag size={16} className="text-violet-400" />}  color="violet" />
+            <StatCard label={t('myListings.stat.views')}    value={totalViews.toLocaleString()}               icon={<Eye size={16} className="text-cyan-400" />}    color="cyan" />
+            <StatCard label={t('myListings.stat.cats')}     value={new Set(listings.map(l => l.categoryEn)).size} icon={<TrendingUp size={16} className="text-emerald-400" />} color="emerald" />
           </div>
         )}
 
@@ -363,13 +363,13 @@ export default function MyListings() {
         ) : listings.length === 0 ? (
           <div className="text-center py-20 animate-fadeIn">
             <div className="text-5xl mb-4">📭</div>
-            <h2 className="text-xl font-bold text-white mb-2">עדיין לא פרסמת מודעות</h2>
-            <p className="text-gray-400 text-sm mb-7">פרסם את המוצר הראשון שלך — AI יעזור לך לכתוב תיאור ולנהל משא ומתן</p>
+            <h2 className="text-xl font-bold text-white mb-2">{t('myListings.empty')}</h2>
+            <p className="text-gray-400 text-sm mb-7">{t('myListings.emptyDesc')}</p>
             <Link
               to="/create"
               className="inline-block bg-gradient-to-r from-emerald-500 to-violet-600 hover:from-emerald-400 hover:to-violet-500 text-white font-bold py-3 px-8 rounded-xl transition-all hover:scale-105 shadow-lg shadow-emerald-500/30"
             >
-              פרסם מודעה ראשונה ✨
+              {t('myListings.firstBtn')}
             </Link>
           </div>
         ) : (

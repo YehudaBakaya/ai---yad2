@@ -5,36 +5,39 @@ import SmartDescription from '../components/SmartDescription';
 import SellerInterview from '../components/SellerInterview';
 import { listingsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const categories = [
-  { id: 'real_estate', name: 'נדל"ן',      icon: '🏠' },
-  { id: 'vehicles',   name: 'רכבים',        icon: '🚗' },
-  { id: 'electronics',name: 'אלקטרוניקה',  icon: '📱' },
-  { id: 'furniture',  name: 'ריהוט',        icon: '🛋️' },
-  { id: 'clothing',   name: 'ביגוד',        icon: '👕' },
-  { id: 'sports',     name: 'ספורט',        icon: '⚽' },
-  { id: 'pets',       name: 'חיות מחמד',   icon: '🐱' },
-  { id: 'services',   name: 'שירותים',      icon: '🔧' },
+  { id: 'real_estate', icon: '🏠' },
+  { id: 'vehicles',   icon: '🚗' },
+  { id: 'electronics',icon: '📱' },
+  { id: 'furniture',  icon: '🛋️' },
+  { id: 'clothing',   icon: '👕' },
+  { id: 'sports',     icon: '⚽' },
+  { id: 'pets',       icon: '🐱' },
+  { id: 'services',   icon: '🔧' },
 ];
 
 const conditions = [
-  { value: 'חדש',          color: 'border-emerald-500 bg-emerald-500/20 text-emerald-300' },
-  { value: 'מעולה',        color: 'border-blue-500 bg-blue-500/20 text-blue-300' },
-  { value: 'טוב',          color: 'border-amber-500 bg-amber-500/20 text-amber-300' },
-  { value: 'סביר',         color: 'border-orange-500 bg-orange-500/20 text-orange-300' },
-  { value: 'דורש תיקון',  color: 'border-red-500 bg-red-500/20 text-red-300' },
+  { value: 'חדש',         color: 'border-emerald-500 bg-emerald-500/20 text-emerald-300' },
+  { value: 'מעולה',       color: 'border-blue-500 bg-blue-500/20 text-blue-300' },
+  { value: 'טוב',         color: 'border-amber-500 bg-amber-500/20 text-amber-300' },
+  { value: 'סביר',        color: 'border-orange-500 bg-orange-500/20 text-orange-300' },
+  { value: 'דורש תיקון', color: 'border-red-500 bg-red-500/20 text-red-300' },
 ];
 
 const STEPS = [
-  { label: 'בסיסי',  icon: <Tag size={16} /> },
-  { label: 'פרטים', icon: <MapPin size={16} /> },
-  { label: 'תיאור',  icon: <FileText size={16} /> },
-  { label: 'סוכן',   icon: <Bot size={16} /> },
+  { key: 'create.step.basic',   icon: <Tag size={16} /> },
+  { key: 'create.step.details', icon: <MapPin size={16} /> },
+  { key: 'create.step.desc',    icon: <FileText size={16} /> },
+  { key: 'create.step.agent',   icon: <Bot size={16} /> },
 ];
 
 export default function CreateListing() {
   const navigate  = useNavigate();
   const { user }  = useAuth();
+  const { t, tCat, tCond } = useLanguage();
+
   const [step, setStep]     = useState(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -43,7 +46,7 @@ export default function CreateListing() {
     title: '', category: '', price: '',
     location: '', condition: 'טוב', description: '',
   });
-  const [images, setImages]   = useState([]); // array of { dataUrl, name }
+  const [images, setImages]   = useState([]);
   const [sellerNotes, setSellerNotes] = useState(null);
   const [interviewDone, setInterviewDone] = useState(false);
   const fileInputRef = useRef(null);
@@ -56,12 +59,12 @@ export default function CreateListing() {
   const validateStep = () => {
     const errs = {};
     if (step === 0) {
-      if (!formData.title.trim())    errs.title    = 'שדה חובה';
-      if (!formData.category)        errs.category = 'בחר קטגוריה';
-      if (formData.price === '')     errs.price    = 'שדה חובה';
+      if (!formData.title.trim())    errs.title    = t('create.errRequired');
+      if (!formData.category)        errs.category = t('create.errCategory');
+      if (formData.price === '')     errs.price    = t('create.errRequired');
     }
     if (step === 1) {
-      if (!formData.location.trim()) errs.location = 'שדה חובה';
+      if (!formData.location.trim()) errs.location = t('create.errRequired');
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -94,9 +97,7 @@ export default function CreateListing() {
     if (!validateStep()) return;
     setLoading(true);
     try {
-      // Send images as base64 dataURLs — stored directly in MongoDB
       const imageUrls = images.map(img => img.dataUrl);
-
       await listingsAPI.create({
         ...formData,
         price: parseFloat(formData.price),
@@ -114,7 +115,7 @@ export default function CreateListing() {
       setSuccess(true);
       setTimeout(() => navigate('/listings'), 2000);
     } catch {
-      setErrors({ submit: 'שגיאה בפרסום. נסה שוב.' });
+      setErrors({ submit: t('create.errPublish') });
     } finally {
       setLoading(false);
     }
@@ -128,8 +129,8 @@ export default function CreateListing() {
           <div className="w-20 h-20 bg-emerald-500/20 border-2 border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5">
             <Check size={40} className="text-emerald-400" />
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2">המודעה פורסמה! 🎉</h2>
-          <p className="text-gray-400">מעביר אותך לדף המודעות...</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{t('create.success')}</h2>
+          <p className="text-gray-400">{t('create.successMsg')}</p>
         </div>
       </div>
     );
@@ -143,8 +144,8 @@ export default function CreateListing() {
 
         {/* Header */}
         <div className="text-center mb-10 animate-fadeIn">
-          <h1 className="text-3xl font-extrabold text-white mb-1">פרסם מודעה חדשה</h1>
-          <p className="text-gray-400 text-sm">מלא את הפרטים ותן ל-AI לעזור לך</p>
+          <h1 className="text-3xl font-extrabold text-white mb-1">{t('create.title')}</h1>
+          <p className="text-gray-400 text-sm">{t('create.sub')}</p>
         </div>
 
         {/* Step indicator */}
@@ -159,7 +160,7 @@ export default function CreateListing() {
                                    'bg-slate-800 text-gray-500 cursor-default'}`}
               >
                 {i < step ? <Check size={14} /> : s.icon}
-                <span className="hidden sm:inline">{s.label}</span>
+                <span className="hidden sm:inline">{t(s.key)}</span>
               </button>
               {i < STEPS.length - 1 && (
                 <div className={`h-0.5 w-10 mx-1 transition-all duration-500 ${i < step ? 'bg-emerald-500' : 'bg-slate-700'}`} />
@@ -174,21 +175,19 @@ export default function CreateListing() {
           {/* ── STEP 0: Basic Info ── */}
           {step === 0 && (
             <div className="p-7 space-y-6">
-              <StepTitle icon="✏️" title="פרטים בסיסיים" sub="כותרת, קטגוריה ומחיר" />
+              <StepTitle icon="✏️" title={t('create.s0.title')} sub={t('create.s0.sub')} />
 
-              {/* Title */}
-              <Field label="כותרת המודעה *" error={errors.title}>
+              <Field label={t('create.s0.listingTitle')} error={errors.title}>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => set('title', e.target.value)}
-                  placeholder='לדוגמה: iPhone 15 Pro Max כחול'
+                  placeholder="iPhone 15 Pro Max"
                   className={inputCls(errors.title)}
                 />
               </Field>
 
-              {/* Category tiles */}
-              <Field label="קטגוריה *" error={errors.category}>
+              <Field label={t('create.s0.category')} error={errors.category}>
                 <div className="grid grid-cols-4 gap-2">
                   {categories.map((cat) => (
                     <button
@@ -201,7 +200,7 @@ export default function CreateListing() {
                           : 'border-slate-600 bg-slate-700/60 text-gray-400 hover:border-slate-500 hover:text-gray-200'}`}
                     >
                       <span className="text-2xl">{cat.icon}</span>
-                      <span>{cat.name}</span>
+                      <span>{tCat(cat.id)}</span>
                       {formData.category === cat.id && (
                         <span className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                           <Check size={10} className="text-white" />
@@ -212,20 +211,19 @@ export default function CreateListing() {
                 </div>
               </Field>
 
-              {/* Price */}
-              <Field label="מחיר (₪) *" error={errors.price}>
+              <Field label={t('create.s0.price')} error={errors.price}>
                 <div className="relative">
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₪</span>
                   <input
                     type="number"
                     value={formData.price}
                     onChange={(e) => set('price', e.target.value)}
-                    placeholder="0 = חינם"
+                    placeholder="0"
                     className={`${inputCls(errors.price)} pr-8`}
                   />
                 </div>
                 {formData.price === '0' && (
-                  <p className="text-emerald-400 text-xs mt-1">✅ המודעה תסומן כחינם</p>
+                  <p className="text-emerald-400 text-xs mt-1">{t('create.s0.freeMsg')}</p>
                 )}
               </Field>
             </div>
@@ -234,19 +232,19 @@ export default function CreateListing() {
           {/* ── STEP 1: Details ── */}
           {step === 1 && (
             <div className="p-7 space-y-6">
-              <StepTitle icon="📍" title="פרטים נוספים" sub="מיקום ומצב הפריט" />
+              <StepTitle icon="📍" title={t('create.s1.title')} sub={t('create.s1.sub')} />
 
-              <Field label="מיקום *" error={errors.location}>
+              <Field label={t('create.s1.location')} error={errors.location}>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => set('location', e.target.value)}
-                  placeholder="עיר או אזור"
+                  placeholder={t('create.s1.cityArea')}
                   className={inputCls(errors.location)}
                 />
               </Field>
 
-              <Field label="מצב הפריט">
+              <Field label={t('create.s1.condition')}>
                 <div className="flex flex-wrap gap-2">
                   {conditions.map((c) => (
                     <button
@@ -258,7 +256,7 @@ export default function CreateListing() {
                           ? `${c.color} scale-105 shadow-md`
                           : 'border-slate-600 bg-slate-700 text-gray-400 hover:border-slate-500 hover:text-gray-200'}`}
                     >
-                      {formData.condition === c.value && '✓ '}{c.value}
+                      {formData.condition === c.value && '✓ '}{tCond(c.value)}
                     </button>
                   ))}
                 </div>
@@ -267,17 +265,17 @@ export default function CreateListing() {
               {/* Mini preview */}
               {formData.title && (
                 <div className="bg-slate-700/60 border border-slate-600 rounded-xl p-4">
-                  <p className="text-xs text-gray-400 mb-2 font-semibold">תצוגה מקדימה</p>
+                  <p className="text-xs text-gray-400 mb-2 font-semibold">{t('create.s1.preview')}</p>
                   <div className="flex items-start gap-3">
                     <div className="text-3xl">{selectedCat?.icon || '📦'}</div>
                     <div>
                       <p className="text-white font-bold text-sm">{formData.title}</p>
                       <p className="text-blue-400 font-bold">
-                        {formData.price === '' ? '—' : formData.price === '0' ? 'חינם' : `₪${Number(formData.price).toLocaleString()}`}
+                        {formData.price === '' ? '—' : formData.price === '0' ? t('common.free') : `₪${Number(formData.price).toLocaleString()}`}
                       </p>
                       <div className="flex gap-2 mt-1 text-xs text-gray-400">
                         {formData.location && <span>📍 {formData.location}</span>}
-                        <span>• {formData.condition}</span>
+                        <span>• {tCond(formData.condition)}</span>
                       </div>
                     </div>
                   </div>
@@ -289,17 +287,17 @@ export default function CreateListing() {
           {/* ── STEP 2: Description ── */}
           {step === 2 && (
             <div className="p-7 space-y-5">
-              <StepTitle icon="✨" title="תיאור המודעה" sub="כתוב בעצמך או תן ל-AI לכתוב" />
+              <StepTitle icon="✨" title={t('create.s2.title')} sub={t('create.s2.sub')} />
 
-              <Field label="תיאור">
+              <Field label={t('create.s2.desc')}>
                 <textarea
                   value={formData.description}
                   onChange={(e) => set('description', e.target.value)}
-                  placeholder="תאר את הפריט בפירוט — מצב, גיל, סיבת מכירה..."
+                  placeholder={t('create.s2.placeholder')}
                   className={`${inputCls()} resize-none h-36`}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.description.length}/500 תווים
+                  {formData.description.length}/500 {t('create.s2.chars')}
                 </p>
               </Field>
 
@@ -308,7 +306,7 @@ export default function CreateListing() {
                 <div className="border border-purple-500/30 bg-purple-500/5 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles size={16} className="text-purple-400" />
-                    <span className="text-sm font-semibold text-purple-300">יצרן תיאור AI</span>
+                    <span className="text-sm font-semibold text-purple-300">{t('create.s2.aiTitle')}</span>
                   </div>
                   <SmartDescription
                     title={formData.title}
@@ -318,13 +316,12 @@ export default function CreateListing() {
                 </div>
               ) : (
                 <div className="border border-slate-600 rounded-xl p-4 text-center text-gray-500 text-sm">
-                  מלא כותרת וקטגוריה בשלב הראשון כדי להשתמש ב-AI
+                  {t('create.s2.aiNoData')}
                 </div>
               )}
 
               {/* Image uploader */}
-              <Field label={`תמונות (${images.length}/5)`}>
-                {/* Drop zone */}
+              <Field label={`${t('create.s2.images')} (${images.length}/5)`}>
                 <div
                   onDrop={handleDrop}
                   onDragOver={(e) => e.preventDefault()}
@@ -345,27 +342,24 @@ export default function CreateListing() {
                   <Upload size={24} className="text-gray-500 mx-auto mb-2" />
                   {images.length < 5 ? (
                     <>
-                      <p className="text-gray-400 text-sm">גרור תמונות לכאן או <span className="text-blue-400 font-medium">לחץ לבחור</span></p>
-                      <p className="text-gray-600 text-xs mt-1">JPG, PNG, WEBP • עד 5 תמונות</p>
+                      <p className="text-gray-400 text-sm">
+                        {t('create.s2.drop')} <span className="text-blue-400 font-medium">{t('create.s2.click')}</span>
+                      </p>
+                      <p className="text-gray-600 text-xs mt-1">{t('create.s2.imgTypes')}</p>
                     </>
                   ) : (
-                    <p className="text-gray-500 text-sm">הגעת למגבלת 5 תמונות</p>
+                    <p className="text-gray-500 text-sm">{t('create.s2.maxImgs')}</p>
                   )}
                 </div>
 
-                {/* Previews */}
                 {images.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     {images.map((img, idx) => (
                       <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-600">
-                        <img
-                          src={img.dataUrl}
-                          alt={img.name}
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={img.dataUrl} alt={img.name} className="w-full h-full object-cover" />
                         {idx === 0 && (
                           <span className="absolute bottom-1 left-1 bg-blue-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                            ראשית
+                            {t('create.s2.primary')}
                           </span>
                         )}
                         <button
@@ -390,28 +384,30 @@ export default function CreateListing() {
           {/* ── STEP 3: Seller Interview ── */}
           {step === 3 && (
             <div className="p-7 space-y-5">
-              <StepTitle icon="🤖" title="הגדרת סוכן AI" sub="ספר לסוכן כיצד לנהל משא ומתן עבורך" />
+              <StepTitle icon="🤖" title={t('create.s3.title')} sub={t('create.s3.sub')} />
 
               {!interviewDone ? (
                 <SellerInterview
                   listingPrice={parseFloat(formData.price) || 0}
-                  onComplete={(notes) => {
-                    setSellerNotes(notes);
-                    setInterviewDone(true);
-                  }}
-                  onSkip={() => {
-                    setSellerNotes(null);
-                    setInterviewDone(true);
-                  }}
+                  onComplete={(notes) => { setSellerNotes(notes); setInterviewDone(true); }}
+                  onSkip={() => { setSellerNotes(null); setInterviewDone(true); }}
                 />
               ) : (
                 <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 text-sm text-gray-300 space-y-1.5">
-                  <p className="font-semibold text-purple-300 mb-2">סיכום הגדרות הסוכן</p>
-                  {sellerNotes?.minPrice && <p>💰 מחיר מינימלי: <span className="text-white font-bold">₪{Number(sellerNotes.minPrice).toLocaleString()}</span></p>}
-                  {sellerNotes?.flexibility && <p>📊 גמישות: <span className="text-white">{sellerNotes.flexibility}</span></p>}
-                  {sellerNotes?.reason && <p>📝 סיבת מכירה: <span className="text-white">{sellerNotes.reason}</span></p>}
-                  {sellerNotes?.terms && <p>📋 תנאים: <span className="text-white">{sellerNotes.terms}</span></p>}
-                  {!sellerNotes && <p className="text-gray-500">ללא הגדרות סוכן — הסוכן ינהל משא ומתן לפי ברירת מחדל</p>}
+                  <p className="font-semibold text-purple-300 mb-2">{t('create.s3.summary')}</p>
+                  {sellerNotes?.minPrice && (
+                    <p>💰 {t('create.s3.minPrice')}: <span className="text-white font-bold">₪{Number(sellerNotes.minPrice).toLocaleString()}</span></p>
+                  )}
+                  {sellerNotes?.flexibility && (
+                    <p>📊 {t('create.s3.flex')}: <span className="text-white">{sellerNotes.flexibility}</span></p>
+                  )}
+                  {sellerNotes?.reason && (
+                    <p>📝 {t('create.s3.reason')}: <span className="text-white">{sellerNotes.reason}</span></p>
+                  )}
+                  {sellerNotes?.terms && (
+                    <p>📋 {t('create.s3.terms')}: <span className="text-white">{sellerNotes.terms}</span></p>
+                  )}
+                  {!sellerNotes && <p className="text-gray-500">{t('create.s3.noSettings')}</p>}
                 </div>
               )}
             </div>
@@ -426,7 +422,7 @@ export default function CreateListing() {
                 className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-5 rounded-xl transition-all hover:scale-[1.02] active:scale-95"
               >
                 <ChevronRight size={18} />
-                חזור
+                {t('create.back')}
               </button>
             )}
 
@@ -436,7 +432,7 @@ export default function CreateListing() {
                 onClick={handleNext}
                 className="flex-1 btn-shimmer text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-transform"
               >
-                המשך
+                {t('create.next')}
                 <ChevronLeft size={18} />
               </button>
             ) : (
@@ -449,12 +445,12 @@ export default function CreateListing() {
                 {loading ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    מפרסם...
+                    {t('create.publishing')}
                   </>
                 ) : (
                   <>
                     <Check size={18} />
-                    פרסם מודעה!
+                    {t('create.publish')}
                   </>
                 )}
               </button>
@@ -467,7 +463,7 @@ export default function CreateListing() {
           onClick={() => navigate('/')}
           className="mt-4 w-full text-gray-500 hover:text-gray-300 text-sm py-2 transition-colors"
         >
-          ביטול — חזור לדף הבית
+          {t('create.cancel')}
         </button>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -13,9 +15,12 @@ import MyListings from './pages/MyListings';
 import Profile from './pages/Profile';
 import DealHistory from './pages/DealHistory';
 import Favorites from './pages/Favorites';
+import Admin from './pages/Admin';
 
 function App() {
   return (
+    <LanguageProvider>
+    <ThemeProvider>
     <AuthProvider>
       <Router>
         <div className="min-h-screen bg-slate-900">
@@ -44,10 +49,15 @@ function App() {
             <Route path="/favorites" element={
               <ProtectedRoute><Favorites /></ProtectedRoute>
             } />
+            <Route path="/admin" element={
+              <ProtectedRoute><Admin /></ProtectedRoute>
+            } />
           </Routes>
         </div>
       </Router>
     </AuthProvider>
+    </ThemeProvider>
+    </LanguageProvider>
   );
 }
 

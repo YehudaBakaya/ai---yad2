@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Store, CheckCircle, XCircle, Clock, Phone, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getBuyerDeals, getSellerDeals } from '../services/firestoreService';
 
-const STATUS_LABEL = { pending: 'ממתין', approved: 'אושר', rejected: 'נדחה' };
 const STATUS_COLOR = {
   pending:  'text-amber-400 border-amber-500/40 bg-amber-500/10',
   approved: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10',
   rejected: 'text-red-400 border-red-500/40 bg-red-500/10',
 };
+
 const StatusIcon = ({ s }) =>
   s === 'approved' ? <CheckCircle size={13} /> :
   s === 'rejected' ? <XCircle size={13} /> :
@@ -16,6 +17,7 @@ const StatusIcon = ({ s }) =>
 
 export default function DealHistory() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [tab, setTab]           = useState('buyer');
   const [buyerDeals, setBuyer]  = useState([]);
   const [sellerDeals, setSeller]= useState([]);
@@ -37,8 +39,8 @@ export default function DealHistory() {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-extrabold text-white mb-1">היסטוריית עסקאות</h1>
-          <p className="text-gray-400 text-sm">כל הקניות והמכירות שלך במקום אחד</p>
+          <h1 className="text-2xl font-extrabold text-white mb-1">{t('history.title')}</h1>
+          <p className="text-gray-400 text-sm">{t('history.sub')}</p>
         </div>
 
         {/* Tabs */}
@@ -47,14 +49,14 @@ export default function DealHistory() {
             active={tab === 'buyer'}
             onClick={() => setTab('buyer')}
             icon={<ShoppingBag size={15} />}
-            label="קניות שלי"
+            label={t('history.purchases')}
             count={buyerDeals.length}
           />
           <TabBtn
             active={tab === 'seller'}
             onClick={() => setTab('seller')}
             icon={<Store size={15} />}
-            label="מכירות שלי"
+            label={t('history.sales')}
             count={sellerDeals.length}
           />
         </div>
@@ -67,7 +69,7 @@ export default function DealHistory() {
         ) : deals.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-5xl mb-4">{tab === 'buyer' ? '🛒' : '🏪'}</div>
-            <p className="text-gray-400">{tab === 'buyer' ? 'עוד לא ביצעת קניות' : 'עוד לא ביצעת מכירות'}</p>
+            <p className="text-gray-400">{tab === 'buyer' ? t('history.noPurchases') : t('history.noSales')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -103,9 +105,10 @@ function TabBtn({ active, onClick, icon, label, count }) {
 }
 
 function DealCard({ deal, isBuyer }) {
+  const { t, lang } = useLanguage();
   const savingsPct = Math.round(Math.abs(deal.listingPrice - deal.agreedPrice) / deal.listingPrice * 100);
   const dateStr = deal.createdAt?.toDate
-    ? deal.createdAt.toDate().toLocaleDateString('he-IL')
+    ? deal.createdAt.toDate().toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US')
     : '';
 
   return (
@@ -121,28 +124,28 @@ function DealCard({ deal, isBuyer }) {
         </div>
         <span className={`flex items-center gap-1 text-xs font-semibold border px-2 py-1 rounded-full ${STATUS_COLOR[deal.status]}`}>
           <StatusIcon s={deal.status} />
-          {STATUS_LABEL[deal.status]}
+          {t(`history.${deal.status}`)}
         </span>
       </div>
 
       {/* Prices */}
       <div className="flex items-center gap-3 bg-slate-700/50 rounded-xl px-3 py-2 mb-3">
         <div>
-          <div className="text-[10px] text-gray-400">מחיר שסוכם</div>
+          <div className="text-[10px] text-gray-400">{t('history.agreedPrice')}</div>
           <div className="text-lg font-extrabold text-emerald-400">₪{deal.agreedPrice?.toLocaleString()}</div>
         </div>
         <div className="w-px h-8 bg-slate-600 mx-1" />
         <div>
-          <div className="text-[10px] text-gray-400">מחיר מקורי</div>
+          <div className="text-[10px] text-gray-400">{t('history.origPrice')}</div>
           <div className="text-sm text-gray-400 line-through">₪{deal.listingPrice?.toLocaleString()}</div>
-          <div className="text-[10px] text-emerald-500 font-medium">חסכת {savingsPct}%</div>
+          <div className="text-[10px] text-emerald-500 font-medium">{t('history.saved', { n: savingsPct })}</div>
         </div>
       </div>
 
       {/* Seller contact — only for approved buyer deals */}
       {isBuyer && deal.status === 'approved' && deal.sellerContact && (
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2.5">
-          <p className="text-emerald-400 text-xs font-bold mb-1.5">פרטי המוכר</p>
+          <p className="text-emerald-400 text-xs font-bold mb-1.5">{t('history.sellerInfo')}</p>
           <div className="space-y-1">
             {deal.sellerContact.name && (
               <p className="text-white text-sm font-medium">{deal.sellerContact.name}</p>
@@ -166,7 +169,7 @@ function DealCard({ deal, isBuyer }) {
       {/* Buyer name — for seller view */}
       {!isBuyer && (
         <div className="text-xs text-gray-400">
-          קונה: <span className="text-white font-medium">{deal.buyerName}</span>
+          {t('history.buyer')}: <span className="text-white font-medium">{deal.buyerName}</span>
         </div>
       )}
     </div>

@@ -8,11 +8,13 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Login() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { syncUser } = useAuth();
+  const { t } = useLanguage();
   const from = location.state?.from?.pathname || '/';
 
   const [form, setForm]     = useState({ email: '', password: '' });
@@ -27,13 +29,13 @@ export default function Login() {
 
   const handleReset = async (e) => {
     e.preventDefault();
-    if (!resetEmail) { setResetMsg('הכנס אימייל'); return; }
+    if (!resetEmail) { setResetMsg(t('login.errEnterEmail')); return; }
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, resetEmail);
-      setResetMsg('✅ מייל לאיפוס נשלח — בדוק את תיבת הדואר שלך');
+      setResetMsg(t('login.resetSent'));
     } catch {
-      setResetMsg('⚠ לא נמצא חשבון עם אימייל זה');
+      setResetMsg('⚠ ' + t('login.errNoAccount'));
     } finally {
       setLoading(false);
     }
@@ -41,7 +43,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password) { setError('מלא את כל השדות'); return; }
+    if (!form.email || !form.password) { setError(t('login.errFillAll')); return; }
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
@@ -49,8 +51,8 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err) {
       const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'
-        ? 'אימייל או סיסמה שגויים'
-        : 'שגיאה בהתחברות';
+        ? t('login.errWrongCreds')
+        : t('login.errGeneral');
       setError(msg);
     } finally {
       setLoading(false);
@@ -65,7 +67,7 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {
-        setError(`שגיאת Google: ${err.code || err.message}`);
+        setError(`Google: ${err.code || err.message}`);
       }
       setLoading(false);
     }
@@ -79,25 +81,24 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <span className="text-white font-extrabold text-lg">Y</span>
+              <span className="text-white font-extrabold text-[10px] tracking-tight">S2B</span>
             </div>
-            <span className="text-2xl font-extrabold text-white">יד<span className="text-blue-400">2</span> <span className="text-purple-400">AI</span></span>
+            <span className="text-2xl font-extrabold text-white">S<span className="text-blue-400">2</span>B <span className="text-purple-400">AI</span></span>
           </div>
-          <h1 className="text-xl font-bold text-white mb-1">ברוך הבא!</h1>
-          <p className="text-gray-400 text-sm">התחבר לחשבון שלך</p>
+          <h1 className="text-xl font-bold text-white mb-1">{t('login.welcome')}</h1>
+          <p className="text-gray-400 text-sm">{t('login.sub')}</p>
         </div>
 
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-7 shadow-xl shadow-black/30">
 
-          {/* Password Reset Mode */}
           {resetMode ? (
             <form onSubmit={handleReset} className="space-y-4">
               <div className="text-center mb-2">
-                <p className="text-white font-semibold mb-1">איפוס סיסמה</p>
-                <p className="text-gray-400 text-sm">נשלח אליך מייל עם הוראות לאיפוס</p>
+                <p className="text-white font-semibold mb-1">{t('login.resetTitle')}</p>
+                <p className="text-gray-400 text-sm">{t('login.resetSub')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">אימייל</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('login.email')}</label>
                 <div className="relative">
                   <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -119,20 +120,18 @@ export default function Login() {
                 disabled={loading}
                 className="w-full btn-shimmer text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> שולח...</> : 'שלח מייל לאיפוס'}
+                {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('login.sending')}</> : t('login.sendReset')}
               </button>
               <button
                 type="button"
                 onClick={() => { setResetMode(false); setResetMsg(''); }}
                 className="w-full text-gray-400 hover:text-white text-sm transition-colors"
               >
-                חזור להתחברות
+                {t('login.backToLogin')}
               </button>
             </form>
           ) : (
           <>
-
-          {/* Google OAuth */}
           <button
             type="button"
             onClick={handleGoogle}
@@ -142,19 +141,18 @@ export default function Login() {
             {loading
               ? <span className="w-4 h-4 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" />
               : <GoogleIcon />}
-            התחבר עם Google
+            {t('login.google')}
           </button>
 
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-slate-700" />
-            <span className="text-xs text-gray-500">או עם אימייל</span>
+            <span className="text-xs text-gray-500">{t('login.orEmail')}</span>
             <div className="flex-1 h-px bg-slate-700" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">אימייל</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('login.email')}</label>
               <div className="relative">
                 <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -167,9 +165,8 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">סיסמה</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('login.password')}</label>
               <div className="relative">
                 <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -197,9 +194,9 @@ export default function Login() {
               className="w-full btn-shimmer text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-60"
             >
               {loading ? (
-                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> מתחבר...</>
+                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('login.loading')}</>
               ) : (
-                <><Sparkles size={16} /> התחבר</>
+                <><Sparkles size={16} /> {t('login.btn')}</>
               )}
             </button>
 
@@ -208,7 +205,7 @@ export default function Login() {
               onClick={() => setResetMode(true)}
               className="w-full text-center text-gray-500 hover:text-gray-300 text-xs transition-colors mt-1"
             >
-              שכחתי סיסמה
+              {t('login.forgot')}
             </button>
           </form>
           </>
@@ -216,9 +213,9 @@ export default function Login() {
         </div>
 
         <p className="text-center text-gray-400 text-sm mt-5">
-          אין לך חשבון?{' '}
+          {t('login.noAccount')}{' '}
           <Link to="/register" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-            הרשם עכשיו
+            {t('login.register')}
           </Link>
         </p>
       </div>

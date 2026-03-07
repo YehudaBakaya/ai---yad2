@@ -3,40 +3,40 @@ import { Link } from 'react-router-dom';
 import { Search, TrendingUp, Zap, ArrowLeft } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
 import { listingsAPI } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const categories = [
-  { id: 'real_estate', name: 'נדל"ן',     icon: '🏠', color: 'from-blue-600 to-blue-800' },
-  { id: 'vehicles',   name: 'רכבים',       icon: '🚗', color: 'from-purple-600 to-purple-800' },
-  { id: 'electronics',name: 'אלקטרוניקה', icon: '📱', color: 'from-cyan-600 to-cyan-800' },
-  { id: 'furniture',  name: 'ריהוט',       icon: '🛋️', color: 'from-amber-600 to-amber-800' },
-  { id: 'clothing',   name: 'ביגוד',       icon: '👕', color: 'from-pink-600 to-pink-800' },
-  { id: 'sports',     name: 'ספורט',       icon: '⚽', color: 'from-emerald-600 to-emerald-800' },
-  { id: 'pets',       name: 'חיות מחמד',  icon: '🐱', color: 'from-orange-600 to-orange-800' },
-  { id: 'services',   name: 'שירותים',     icon: '🔧', color: 'from-teal-600 to-teal-800' },
+const CATEGORY_IDS = [
+  { id: 'real_estate', icon: '🏠', color: 'from-blue-600 to-blue-800' },
+  { id: 'vehicles',    icon: '🚗', color: 'from-purple-600 to-purple-800' },
+  { id: 'electronics', icon: '📱', color: 'from-cyan-600 to-cyan-800' },
+  { id: 'furniture',   icon: '🛋️', color: 'from-amber-600 to-amber-800' },
+  { id: 'clothing',    icon: '👕', color: 'from-pink-600 to-pink-800' },
+  { id: 'sports',      icon: '⚽', color: 'from-emerald-600 to-emerald-800' },
+  { id: 'pets',        icon: '🐱', color: 'from-orange-600 to-orange-800' },
+  { id: 'services',    icon: '🔧', color: 'from-teal-600 to-teal-800' },
 ];
 
-const stats = [
-  { label: 'מודעות פעילות', value: '12,400+' },
-  { label: 'משתמשים',       value: '58,000+' },
-  { label: 'עסקאות הושלמו', value: '94,000+' },
+const STAT_KEYS = [
+  { key: 'home.stat.listings', value: '12,400+' },
+  { key: 'home.stat.users',    value: '58,000+' },
+  { key: 'home.stat.deals',    value: '94,000+' },
 ];
 
 const FEATURED_CACHE = 'yad2_featured_v3';
 
 export default function Home() {
-  const [listings, setListings]     = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const { t, tCat } = useLanguage();
+  const [listings, setListings]       = useState([]);
+  const [loading, setLoading]         = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [hoveredCat, setHoveredCat] = useState(null);
+  const [hoveredCat, setHoveredCat]   = useState(null);
 
   useEffect(() => {
-    // Show cached data immediately (stale-while-revalidate)
     try {
       const cached = JSON.parse(localStorage.getItem(FEATURED_CACHE) || 'null');
       if (cached?.length) { setListings(cached); setLoading(false); }
     } catch {}
 
-    // Fetch fresh from MongoDB backend
     listingsAPI.getAll()
       .then(({ data }) => {
         const fresh = data.slice(0, 6);
@@ -59,7 +59,6 @@ export default function Home() {
 
       {/* ===== HERO ===== */}
       <section className="hero-gradient text-white py-20 px-4 relative overflow-hidden">
-        {/* Decorative blobs */}
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-800/10 rounded-full blur-3xl pointer-events-none" />
@@ -68,13 +67,13 @@ export default function Home() {
           <div className="text-center mb-10 animate-fadeIn">
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur px-4 py-1.5 rounded-full text-sm font-medium mb-5">
               <Zap size={14} className="text-yellow-300" />
-              <span>מופעל בבינה מלאכותית</span>
+              <span>{t('home.aiPowered')}</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight">
-              יד2 עם <span className="bg-gradient-to-r from-violet-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">AI</span>
+              {t('home.title')} <span className="bg-gradient-to-r from-violet-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">AI</span>
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-xl mx-auto">
-              הפלטפורמה הכי חכמה לקנייה ומכירה בישראל — עם ניהול מחיר אוטומטי ותיאורים מושלמים
+              {t('home.subtitle')}
             </p>
           </div>
 
@@ -84,7 +83,7 @@ export default function Home() {
               <Search size={20} className="text-white/60 mx-3 shrink-0" />
               <input
                 type="text"
-                placeholder="חפש מודעות, מוצרים, שירותים..."
+                placeholder={t('home.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent outline-none text-white placeholder-white/50 py-3"
@@ -94,16 +93,16 @@ export default function Home() {
               type="submit"
               className="bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-violet-500/30"
             >
-              חיפוש
+              {t('home.search')}
             </button>
           </form>
 
           {/* Stats */}
           <div className="flex justify-center gap-8 mt-10 animate-fadeIn">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
+            {STAT_KEYS.map((s) => (
+              <div key={s.key} className="text-center">
                 <div className="text-2xl font-extrabold bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent">{s.value}</div>
-                <div className="text-white/60 text-xs mt-0.5">{s.label}</div>
+                <div className="text-white/60 text-xs mt-0.5">{t(s.key)}</div>
               </div>
             ))}
           </div>
@@ -114,11 +113,11 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-4 py-14">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-1 h-7 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full" />
-          <h2 className="text-2xl font-bold text-white">קטגוריות</h2>
+          <h2 className="text-2xl font-bold text-white">{t('home.categories')}</h2>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {categories.map((cat, i) => (
+          {CATEGORY_IDS.map((cat, i) => (
             <Link
               key={cat.id}
               to={`/listings?category=${cat.id}`}
@@ -129,14 +128,13 @@ export default function Home() {
             >
               <div className={`relative bg-slate-800 border border-slate-700 rounded-xl p-4 text-center transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer overflow-hidden
                 ${hoveredCat === cat.id ? 'border-transparent' : ''}`}>
-                {/* Gradient bg on hover */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 transition-opacity duration-300 ${hoveredCat === cat.id ? 'opacity-100' : ''}`} />
                 <div className="relative z-10">
                   <div className={`text-3xl mb-2 transition-transform duration-300 ${hoveredCat === cat.id ? 'scale-125' : ''}`}>
                     {cat.icon}
                   </div>
-                  <div className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors">
-                    {cat.name}
+                  <div className="text-xs font-semibold text-gray-300 transition-colors">
+                    {tCat(cat.id)}
                   </div>
                 </div>
               </div>
@@ -151,13 +149,13 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <div className="w-1 h-7 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
             <TrendingUp className="text-amber-400" size={22} />
-            <h2 className="text-2xl font-bold text-white">מודעות הטרנדים</h2>
+            <h2 className="text-2xl font-bold text-white">{t('home.trending')}</h2>
           </div>
           <Link
             to="/listings"
             className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors group"
           >
-            <span>הכל</span>
+            <span>{t('home.viewAll')}</span>
             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           </Link>
         </div>
@@ -181,7 +179,7 @@ export default function Home() {
             to="/listings"
             className="btn-shimmer inline-block text-white font-bold py-3 px-10 rounded-xl shadow-lg shadow-blue-500/30"
           >
-            ראה את כל המודעות →
+            {t('home.viewAllBtn')}
           </Link>
         </div>
       </section>
@@ -192,15 +190,13 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-br from-violet-600/15 to-cyan-600/10 pointer-events-none" />
           <div className="relative z-10">
             <div className="text-4xl mb-4">🚀</div>
-            <h2 className="text-3xl font-bold text-white mb-3">רוצה למכור משהו?</h2>
-            <p className="text-gray-400 mb-7 text-base max-w-md mx-auto">
-              AI שלנו יכתוב תיאור מושלם וינהל משא ומתן בשבילך — בדקות ספורות
-            </p>
+            <h2 className="text-3xl font-bold text-white mb-3">{t('home.ctaTitle')}</h2>
+            <p className="text-gray-400 mb-7 text-base max-w-md mx-auto">{t('home.ctaDesc')}</p>
             <Link
               to="/create"
               className="inline-block bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 text-white font-bold py-3.5 px-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/30"
             >
-              פרסם מודעה חינם עכשיו ✨
+              {t('home.ctaBtn')}
             </Link>
           </div>
         </div>
@@ -209,8 +205,8 @@ export default function Home() {
       {/* ===== FOOTER ===== */}
       <footer className="border-t border-slate-800 py-8 px-4">
         <div className="max-w-6xl mx-auto text-center text-gray-500 text-sm">
-          <p className="font-medium text-gray-400">&copy; 2026 יד2 AI</p>
-          <p className="mt-1">פלטפורמה פתוחה עם AI מודרני לקנייה ומכירה</p>
+          <p className="font-medium text-gray-400">{t('home.footer')}</p>
+          <p className="mt-1">{t('home.footerSub')}</p>
         </div>
       </footer>
     </div>

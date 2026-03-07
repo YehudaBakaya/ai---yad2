@@ -18,7 +18,7 @@ const toPlain = (doc) => {
 router.get('/', async (req, res) => {
   try {
     if (isConnected()) {
-      const query = { isActive: true };
+      const query = { isActive: { $ne: false } };
 
       if (req.query.category)  query.categoryEn = req.query.category;
       if (req.query.condition) query.condition   = req.query.condition;
@@ -49,7 +49,7 @@ router.get('/', async (req, res) => {
     }
 
     // in-memory fallback
-    let filtered = [...inMemory];
+    let filtered = inMemory.filter(l => l.isActive !== false);
     if (req.query.category)  filtered = filtered.filter(l => l.categoryEn === req.query.category);
     if (req.query.condition) filtered = filtered.filter(l => l.condition === req.query.condition);
     if (req.query.location)  filtered = filtered.filter(l => l.location.toLowerCase().includes(req.query.location.toLowerCase()));
@@ -74,7 +74,7 @@ router.get('/categories/all', async (req, res) => {
     const stats = {};
     if (isConnected()) {
       const counts = await Listing.aggregate([
-        { $match: { isActive: true } },
+        { $match: { isActive: { $ne: false } } },
         { $group: { _id: '$categoryEn', count: { $sum: 1 } } },
       ]);
       const countMap = Object.fromEntries(counts.map(c => [c._id, c.count]));
@@ -141,6 +141,7 @@ router.post('/', optionalAuth, async (req, res) => {
         images: images?.length > 0 ? images : ['https://images.unsplash.com/photo-1540932954986-b06535f787f6?w=600'],
         sellerNotes: sellerNotes || null,
         seller, userId,
+        isActive: true,
         views: 0, rating: 4.5,
       });
       return res.status(201).json(toPlain(doc));
@@ -155,7 +156,7 @@ router.post('/', optionalAuth, async (req, res) => {
       sellerNotes: sellerNotes || null,
       userId, seller,
       images: images?.length > 0 ? images : ['https://images.unsplash.com/photo-1540932954986-b06535f787f6?w=600'],
-      date: new Date(), views: 0, rating: 4.5,
+      date: new Date(), views: 0, rating: 4.5, isActive: true,
     };
     inMemory.push(newListing);
     res.status(201).json(newListing);
@@ -207,7 +208,7 @@ router.patch('/:id/views', async (req, res) => {
 // ── PUT /api/listings/:id ─────────────────────────────────────────────────────
 router.put('/:id', optionalAuth, async (req, res) => {
   try {
-    const allowed = ['title', 'price', 'location', 'condition', 'description', 'images', 'isActive', 'seller'];
+    const allowed = ['title', 'price', 'location', 'condition', 'description', 'images', 'isActive', 'seller', 'rating', 'ratingCount'];
     const updates = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
 

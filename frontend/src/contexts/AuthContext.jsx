@@ -33,11 +33,14 @@ export function AuthProvider({ children }) {
           phone:  null,
           avatar: firebaseUser.photoURL || null,
         });
-        // Fetch phone + sync to MongoDB in background (non-blocking)
+        // Fetch phone/isAdmin + sync to MongoDB in background (non-blocking)
         getUserProfile(firebaseUser.uid)
           .then((profile) => {
-            if (profile?.phone) {
-              setUser(prev => prev ? { ...prev, phone: profile.phone } : prev);
+            const updates = {};
+            if (profile?.phone)   updates.phone   = profile.phone;
+            if (profile?.isAdmin) updates.isAdmin = true;
+            if (Object.keys(updates).length) {
+              setUser(prev => prev ? { ...prev, ...updates } : prev);
             }
             syncToMongo(firebaseUser, profile?.phone || null);
           })
@@ -56,11 +59,12 @@ export function AuthProvider({ children }) {
     if (!u) return;
     const profile = await getUserProfile(u.uid).catch(() => null);
     const userData = {
-      id:     u.uid,
-      name:   u.displayName || u.email?.split('@')[0] || 'משתמש',
-      email:  u.email,
-      phone:  profile?.phone || null,
-      avatar: u.photoURL || null,
+      id:      u.uid,
+      name:    u.displayName || u.email?.split('@')[0] || 'משתמש',
+      email:   u.email,
+      phone:   profile?.phone   || null,
+      avatar:  u.photoURL       || null,
+      isAdmin: profile?.isAdmin || false,
     };
     setUser(userData);
     syncToMongo(u, userData.phone);
