@@ -67,11 +67,11 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-all duration-300 group-hover:scale-110">
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:scale-110">
             <span className="text-white font-extrabold text-[11px] tracking-tight">S2B</span>
           </div>
           <span className="text-white font-extrabold text-xl tracking-tight">
-            S<span className="text-cyan-400">2</span>B <span className="text-violet-400">AI</span>
+            S<span className="text-cyan-400">2</span>B <span className="text-blue-400">AI</span>
           </span>
         </Link>
 
@@ -106,7 +106,7 @@ export default function Navbar() {
               {/* Create listing */}
               <Link
                 to="/create"
-                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 text-sm shadow-md shadow-violet-500/20 hover:shadow-violet-500/40 transition-shadow"
+                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 text-sm shadow-md shadow-blue-500/20 hover:shadow-blue-500/40 transition-shadow"
               >
                 <Plus size={16} />
                 <span className="hidden sm:inline">{t('navbar.publish')}</span>
@@ -147,7 +147,7 @@ export default function Navbar() {
                       className="flex items-center justify-between gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700/60 hover:text-white transition-colors text-sm"
                     >
                       <div className="flex items-center gap-2">
-                        <LayoutList size={15} className="text-violet-400" />
+                        <LayoutList size={15} className="text-blue-400" />
                         {t('navbar.myListings')}
                       </div>
                       {pendingDeals > 0 && (
@@ -223,7 +223,7 @@ export default function Navbar() {
               </Link>
               <Link
                 to="/register"
-                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg text-sm shadow-md shadow-violet-500/20"
+                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg text-sm shadow-md shadow-blue-500/20"
               >
                 {t('navbar.register')}
               </Link>
@@ -245,7 +245,7 @@ function NavLink({ to, icon, label, active }) {
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>
-      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-violet-500 rounded-full" />}
+      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-blue-500 rounded-full" />}
     </Link>
   );
 }

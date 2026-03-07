@@ -164,7 +164,8 @@ router.post('/firebase-sync', async (req, res) => {
         }
       } else {
         if (name)   user.name   = name;
-        if (avatar) user.avatar = avatar;
+        // Only update avatar from Firebase if MongoDB doesn't have a custom one (base64)
+        if (avatar && !user.avatar?.startsWith('data:')) user.avatar = avatar;
         if (phone)  user.phone  = phone;
       }
       await user.save();
@@ -180,6 +181,53 @@ router.post('/firebase-sync', async (req, res) => {
     res.json({ user: safeUser(u) });
   } catch (err) {
     console.error('Firebase sync error:', err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+// ── GET /api/auth/profile/:uid ────────────────────────────────────────────────
+router.get('/profile/:uid', async (req, res) => {
+  try {
+    const { uid } = req.params;
+    if (isConnected()) {
+      const user = await User.findOne({ firebaseUid: uid });
+      if (!user) return res.status(404).json({ error: 'משתמש לא נמצא' });
+      return res.json({ user: safeUser(user) });
+    }
+    const u = inMemory.find(u => u.firebaseUid === uid);
+    if (!u) return res.status(404).json({ error: 'משתמש לא נמצא' });
+    return res.json({ user: safeUser(u) });
+  } catch (err) {
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+// ── PUT /api/auth/profile ─────────────────────────────────────────────────────
+// שומר שם, טלפון, ותמונת פרופיל (base64) במונגו — ללא Firebase Storage
+router.put('/profile', async (req, res) => {
+  try {
+    const { uid, name, phone, avatar } = req.body;
+    if (!uid) return res.status(400).json({ error: 'uid נדרש' });
+
+    if (isConnected()) {
+      let user = await User.findOne({ firebaseUid: uid });
+      if (!user) return res.status(404).json({ error: 'משתמש לא נמצא' });
+      if (name   !== undefined) user.name   = name.trim();
+      if (phone  !== undefined) user.phone  = phone?.trim() || null;
+      if (avatar !== undefined) user.avatar = avatar || null;
+      await user.save();
+      return res.json({ user: safeUser(user) });
+    }
+
+    // in-memory fallback
+    let u = inMemory.find(u => u.firebaseUid === uid);
+    if (!u) return res.status(404).json({ error: 'משתמש לא נמצא' });
+    if (name   !== undefined) u.name   = name.trim();
+    if (phone  !== undefined) u.phone  = phone?.trim() || null;
+    if (avatar !== undefined) u.avatar = avatar || null;
+    return res.json({ user: safeUser(u) });
+  } catch (err) {
+    console.error('Profile update error:', err);
     res.status(500).json({ error: 'שגיאת שרת' });
   }
 });

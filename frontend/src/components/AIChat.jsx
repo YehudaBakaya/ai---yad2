@@ -27,9 +27,10 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
   const [currentOffer, setCurrentOffer] = useState(listingPrice);
   const [dealReached, setDealReached]   = useState(false);
   const [suggestedReplies, setSuggestedReplies] = useState([
-    'מה הכי נמוך שאפשר?',
-    `אני מציע ₪${Math.round(listingPrice * 0.85).toLocaleString()}`,
-    'יש גמישות?',
+    'מה מצב המוצר?',
+    'כמה זמן בשימוש?',
+    'האם יש אחריות?',
+    'מה כלול במחיר?',
   ]);
 
   // Deal submission state

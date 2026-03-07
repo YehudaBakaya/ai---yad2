@@ -4,8 +4,8 @@ import { User, Mail, Phone, Save, Camera, ArrowRight, UserCircle } from 'lucide-
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { saveUserProfile, uploadImage } from '../services/firestoreService';
-import { listingsAPI } from '../services/api';
+import { saveUserProfile } from '../services/firestoreService';
+import { authAPI, listingsAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Profile() {
@@ -19,7 +19,7 @@ export default function Profile() {
     phone: user?.phone || '',
   });
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
-  const [avatarFile, setAvatarFile]       = useState(null);
+  const [avatarBase64, setAvatarBase64]   = useState(null); // base64 of new image
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError]    = useState('');
@@ -27,9 +27,11 @@ export default function Profile() {
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
-    setAvatarFile(file);
     const reader = new FileReader();
-    reader.onload = (ev) => setAvatarPreview(ev.target.result);
+    reader.onload = (ev) => {
+      setAvatarPreview(ev.target.result);
+      setAvatarBase64(ev.target.result); // keep base64 for save
+    };
     reader.readAsDataURL(file);
   };
 
@@ -38,29 +40,31 @@ export default function Profile() {
     setSaving(true);
     setError('');
     try {
-      let photoURL = user?.avatar || null;
+      // Avatar: use new base64 if selected, otherwise keep existing
+      const avatarData = avatarBase64 || user?.avatar || null;
 
-      // Upload new avatar if selected
-      if (avatarFile && user?.id) {
-        photoURL = await uploadImage(avatarFile, `avatars/${user.id}/avatar`);
-      }
+      // Save to MongoDB (name, phone, avatar as base64)
+      await authAPI.updateProfile({
+        uid:    user.id,
+        name:   form.name.trim(),
+        phone:  form.phone.trim() || null,
+        avatar: avatarData,
+      });
 
-      // Update Firebase Auth profile
+      // Update Firebase Auth displayName
       await updateProfile(auth.currentUser, {
         displayName: form.name.trim(),
-        photoURL: photoURL || undefined,
       });
 
-      // Update Firestore user profile
+      // Update Firestore (name + phone only, no avatar)
       await saveUserProfile(user.id, {
-        name:   form.name.trim(),
-        phone:  form.phone.trim(),
-        email:  user.email,
-        avatar: photoURL,
+        name:  form.name.trim(),
+        phone: form.phone.trim() || null,
+        email: user.email,
       });
 
-      // Update AuthContext immediately (optimistic) so Navbar + all components update at once
-      updateUser({ name: form.name.trim(), phone: form.phone.trim() || null, avatar: photoURL || user?.avatar });
+      // Update AuthContext immediately
+      updateUser({ name: form.name.trim(), phone: form.phone.trim() || null, avatar: avatarData });
 
       // Sync all user listings with new seller info (fire-and-forget)
       if (user?.id) {
@@ -68,16 +72,14 @@ export default function Profile() {
           name:  form.name.trim(),
           phone: form.phone.trim() || null,
           email: user.email,
-          image: photoURL || user.avatar || null,
+          image: avatarData || null,
         }).catch(() => {});
       }
 
-      // Full sync in background (updates phone from Firestore, re-confirms all fields)
-      syncUser().catch(() => {});
-
+      setAvatarBase64(null); // reset — already saved
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch {
+    } catch (err) {
       setError(t('profile.errSave'));
     } finally {
       setSaving(false);

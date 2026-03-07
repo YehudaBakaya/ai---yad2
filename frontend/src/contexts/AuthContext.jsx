@@ -6,16 +6,21 @@ import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
-// Sync Firebase user to MongoDB in the background
-const syncToMongo = (firebaseUser, phone = null) => {
-  if (!firebaseUser) return;
-  authAPI.firebaseSync({
-    uid:    firebaseUser.uid,
-    name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
-    email:  firebaseUser.email,
-    avatar: firebaseUser.photoURL || null,
-    phone:  phone || null,
-  }).catch(() => {});
+// Sync Firebase user to MongoDB — returns MongoDB user (includes saved avatar)
+const syncToMongo = async (firebaseUser, phone = null) => {
+  if (!firebaseUser) return null;
+  try {
+    const { data } = await authAPI.firebaseSync({
+      uid:    firebaseUser.uid,
+      name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
+      email:  firebaseUser.email,
+      avatar: firebaseUser.photoURL || null,
+      phone:  phone || null,
+    });
+    return data.user || null;
+  } catch {
+    return null;
+  }
 };
 
 export function AuthProvider({ children }) {
@@ -25,7 +30,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        // Set user immediately — don't wait for Firestore profile
+        // Set user immediately from Firebase — don't wait for Firestore/MongoDB
         setUser({
           id:     firebaseUser.uid,
           name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
@@ -33,18 +38,21 @@ export function AuthProvider({ children }) {
           phone:  null,
           avatar: firebaseUser.photoURL || null,
         });
-        // Fetch phone/isAdmin + sync to MongoDB in background (non-blocking)
-        getUserProfile(firebaseUser.uid)
-          .then((profile) => {
-            const updates = {};
-            if (profile?.phone)   updates.phone   = profile.phone;
-            if (profile?.isAdmin) updates.isAdmin = true;
-            if (Object.keys(updates).length) {
-              setUser(prev => prev ? { ...prev, ...updates } : prev);
-            }
-            syncToMongo(firebaseUser, profile?.phone || null);
-          })
-          .catch(() => { syncToMongo(firebaseUser); });
+
+        // Background: load phone/isAdmin from Firestore + avatar from MongoDB
+        Promise.all([
+          getUserProfile(firebaseUser.uid).catch(() => null),
+          syncToMongo(firebaseUser),
+        ]).then(([profile, mongoUser]) => {
+          const updates = {};
+          if (profile?.phone)    updates.phone   = profile.phone;
+          if (profile?.isAdmin)  updates.isAdmin = true;
+          // MongoDB avatar takes priority (user may have uploaded a custom base64 avatar)
+          if (mongoUser?.avatar) updates.avatar  = mongoUser.avatar;
+          if (Object.keys(updates).length) {
+            setUser(prev => prev ? { ...prev, ...updates } : prev);
+          }
+        });
       } else {
         setUser(null);
       }
@@ -57,17 +65,19 @@ export function AuthProvider({ children }) {
   const syncUser = useCallback(async (firebaseUser) => {
     const u = firebaseUser || auth.currentUser;
     if (!u) return;
-    const profile = await getUserProfile(u.uid).catch(() => null);
+    const [profile, mongoUser] = await Promise.all([
+      getUserProfile(u.uid).catch(() => null),
+      syncToMongo(u),
+    ]);
     const userData = {
       id:      u.uid,
       name:    u.displayName || u.email?.split('@')[0] || 'משתמש',
       email:   u.email,
       phone:   profile?.phone   || null,
-      avatar:  u.photoURL       || null,
+      avatar:  mongoUser?.avatar || u.photoURL || null,
       isAdmin: profile?.isAdmin || false,
     };
     setUser(userData);
-    syncToMongo(u, userData.phone);
   }, []);
 
   // Optimistic partial update — no async calls needed

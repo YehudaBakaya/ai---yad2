@@ -30,7 +30,9 @@ export const listingsAPI = {
 
 // ── Auth API (MongoDB sync) ──────────────────────────────────────────────────
 export const authAPI = {
-  firebaseSync: (data) => api.post('/auth/firebase-sync', data),
+  firebaseSync:  (data) => api.post('/auth/firebase-sync', data),
+  getProfile:    (uid)  => api.get(`/auth/profile/${uid}`),
+  updateProfile: (data) => api.put('/auth/profile', data),
 };
 
 export default api;

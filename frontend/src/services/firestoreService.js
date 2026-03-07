@@ -37,7 +37,10 @@ export const uploadImage = async (dataUrlOrBlob, path) => {
     blob = await res.blob();
   }
   const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, blob);
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('העלאת התמונה נכשלה — Firebase Storage לא מופעל או שה-rules לא פורסו')), 12000)
+  );
+  await Promise.race([uploadBytes(storageRef, blob), timeout]);
   return getDownloadURL(storageRef);
 };
 

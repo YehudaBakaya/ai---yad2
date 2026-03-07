@@ -14,15 +14,17 @@ const hasRealAPI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-const ACCEPT_WORDS = ['מסכים', 'מקובל', 'בסדר גמור', 'לקחתי', 'קנוי', 'deal', 'סגור', 'מוכן לסגור', 'נסגר', 'אני לוקח', 'אני קונה', 'עסקה', 'יאללה סוגרים', 'בוא נסגור', 'מסכים למחיר'];
-const LOWEST_WORDS  = ['הכי נמוך', 'מינימום', 'תחתית', 'אין פחות', 'bottom', 'lowest', 'מה הכי'];
-const URGENT_WORDS  = ['היום', 'עכשיו', 'מזומן', 'cash', 'מיד', 'תוך שעה'];
-const MIDPOINT_WORDS= ['נפגש באמצע', 'חצי חצי', 'ספליט', 'split', 'meet in the middle', 'פגישה באמצע'];
+const ACCEPT_WORDS   = ['מסכים', 'מקובל', 'בסדר גמור', 'לקחתי', 'קנוי', 'deal', 'סגור', 'מוכן לסגור', 'נסגר', 'אני לוקח', 'אני קונה', 'עסקה', 'יאללה סוגרים', 'בוא נסגור', 'מסכים למחיר'];
+const LOWEST_WORDS   = ['הכי נמוך', 'מינימום', 'תחתית', 'אין פחות', 'bottom', 'lowest', 'מה הכי'];
+const URGENT_WORDS   = ['היום', 'עכשיו', 'מזומן', 'cash', 'מיד', 'תוך שעה'];
+const MIDPOINT_WORDS = ['נפגש באמצע', 'חצי חצי', 'ספליט', 'split', 'meet in the middle', 'פגישה באמצע'];
+const PRODUCT_WORDS  = ['מצב', 'אחריות', 'כמה זמן', 'כמה שנים', 'בשימוש', 'כלול', 'מה כלול', 'תמונות', 'בדיקה', 'היסטוריה', 'פגמים', 'שריטות', 'ספר לי', 'ספרי', 'מידע', 'פרטים', 'למה מוכר', 'מדוע מוכר', 'קנית', 'מתי קנית', 'גיל', 'ישן', 'חדש'];
 
-const detectAcceptance = (msg) => ACCEPT_WORDS.some(w => msg.includes(w));
-const detectLowest     = (msg) => LOWEST_WORDS.some(w => msg.includes(w));
-const detectUrgent     = (msg) => URGENT_WORDS.some(w => msg.includes(w));
-const detectMidpoint   = (msg) => MIDPOINT_WORDS.some(w => msg.includes(w));
+const detectAcceptance    = (msg) => ACCEPT_WORDS.some(w => msg.includes(w));
+const detectLowest        = (msg) => LOWEST_WORDS.some(w => msg.includes(w));
+const detectUrgent        = (msg) => URGENT_WORDS.some(w => msg.includes(w));
+const detectMidpoint      = (msg) => MIDPOINT_WORDS.some(w => msg.includes(w));
+const detectProductQuestion = (msg) => PRODUCT_WORDS.some(w => msg.includes(w));
 
 // Extract number from message
 const extractAmount = (msg) => {
@@ -118,24 +120,24 @@ const getAIMockResponse = (message, role, listingPrice, history, sellerNotes = n
         ]),
         currentOffer: firstOffer,
         confidence: 0.82,
-        suggestedReplies: ['מה הכי נמוך שאפשר?', `אני מציע ₪${cleanPrice(lp * 0.85).toLocaleString()}`, 'יש גמישות במחיר?'],
+        suggestedReplies: ['מה מצב המוצר?', 'כמה זמן בשימוש?', 'מה כלול במחיר?'],
       };
     }
 
     // ── Analyze buyer's position ────────────────────────────────────────────
     const buyerPct = buyerOffer ? buyerOffer / lp : null;
 
-    // ── "What's your lowest?" ───────────────────────────────────────────────
+    // ── "What's your lowest?" — deflect, don't reveal floor ─────────────────
     if (isLowest) {
-      const lowestOffer = clamp(hardFloor + cleanPrice(gapTotal * 0.1));
       return {
         message: pick([
-          `אני מעריך את הישירות! 💪\n\nהכי נמוך שאני יכול להגיע — בהתחשב שמדובר במוצר איכותי — הוא ₪${lowestOffer.toLocaleString()}. מתחת לזה זה פשוט לא שווה לי למכור.\n\nזה מחיר שעובד עבורך?`,
-          `שאלה הוגנת. 🎯\n\nה"תחתית" שלי היא ₪${lowestOffer.toLocaleString()} — ולא אתפתה מתחת לזה. השקעתי במוצר הזה ואני יודע בדיוק מה הוא שווה.\n\nמה אתה אומר?`,
+          `אני לא מנהל משא ומתן ככה. 😊\n\nהמחיר שלי משקף את הערך האמיתי של המוצר. תציע לי מחיר שנראה לך הוגן — ואני אשקול ברצינות.`,
+          `"הכי נמוך"? 😄 זה לא כך שזה עובד אצלי.\n\nאני מוכר ישר — תגיד לי כמה אתה מוכן לשלם ונראה איפה אנחנו פוגשים.`,
+          `אני לא חושף מחיר מינימום. 🎯\n\nאבל אם תציע הצעה רצינית, אני מבטיח שנשמע אחד את השני. מה יש לך בראש?`,
         ]),
-        currentOffer: lowestOffer,
-        confidence: 0.88,
-        suggestedReplies: [`מסכים — ₪${lowestOffer.toLocaleString()}`, 'יקר לי קצת', 'בוא נפגש באמצע'],
+        currentOffer: lastAIOffer,
+        confidence: 0.85,
+        suggestedReplies: [`אני מציע ₪${cleanPrice(lp * 0.87).toLocaleString()}`, `₪${cleanPrice(lp * 0.9).toLocaleString()}`, 'יש גמישות?'],
       };
     }
 
@@ -235,6 +237,40 @@ const getAIMockResponse = (message, role, listingPrice, history, sellerNotes = n
       };
     }
 
+    // ── Product knowledge question ──────────────────────────────────────────
+    if (detectProductQuestion(msg)) {
+      const condition = sellerNotes?.condition || 'מצוין';
+      const reason    = sellerNotes?.reason    || 'שינוי צרכים אישיים';
+      const conditionAnswers = {
+        'חדש':          'המוצר חדש לגמרי — מעולם לא היה בשימוש. יצא מהקופסה רק לבדיקה.',
+        'כמו חדש':      'המוצר נמצא במצב כמו חדש — שימוש מינימלי בלבד, ללא שריטות או פגמים.',
+        'טוב מאוד':     'המוצר במצב טוב מאוד — שימוש סביר ורגיל, ללא פגמים משמעותיים.',
+        'טוב':          'המוצר במצב טוב — שימוש יומיומי, ייתכן שריטות קטנות שלא משפיעות על הפונקציה.',
+        'בינוני':       'המוצר במצב בינוני — שימוש רב, ייתכנו סימני בלאי נראים לעין.',
+        'לשיפוץ':       'המוצר זקוק לשיפוץ — המחיר כבר מחושב בהתאם.',
+      };
+      const conditionDesc = conditionAnswers[condition] || `המוצר במצב ${condition}.`;
+
+      const answers = [
+        `בשמחה! 😊\n\n**מצב:** ${conditionDesc}\n**סיבת מכירה:** ${reason}.\n**כלול בעסקה:** כל מה שמופיע במודעה, ללא תוספות נסתרות.\n\nיש לך שאלות נוספות?`,
+        `שאלה מצוינת! 🎯\n\n**מצב המוצר:** ${conditionDesc}\n**זמן בשימושי:** ${sellerNotes?.usagePeriod || 'כשנה בערך'}.\n**סיבת מכירה:** ${reason}.\n\nרוצה לדעת עוד פרטים?`,
+        `שמח שאתה שואל — זה מראה שאתה קונה רציני. 👍\n\n**מצב:** ${conditionDesc}\n**אחריות:** ${sellerNotes?.warranty || 'אין אחריות יצרן פעילה — אבל המוצר עצמו בסדר מושלם'}.\n**כלול:** כל האביזרים המקוריים.\n\nמה עוד רצית לדעת?`,
+      ];
+
+      // Remaining product questions (minus the one just asked)
+      const allProductReplies = ['מה מצב המוצר?', 'כמה זמן בשימוש?', 'האם יש אחריות?', 'מה כלול במחיר?', 'למה אתה מוכר?'];
+      const remainingQ = allProductReplies.filter(q => !msg.includes(q.replace('?', '').toLowerCase().slice(0, 8)));
+      const followUps  = remainingQ.slice(0, 2);
+      followUps.push(`אני מציע ₪${cleanPrice(lp * 0.88).toLocaleString()}`);
+
+      return {
+        message: pick(answers),
+        currentOffer: lastAIOffer,
+        confidence: 0.82,
+        suggestedReplies: followUps,
+      };
+    }
+
     // ── No specific amount, general message ────────────────────────────────
     // Make a small additional concession from the last AI offer
     const smallDrop = cleanPrice(lp * 0.02);
@@ -247,7 +283,7 @@ const getAIMockResponse = (message, role, listingPrice, history, sellerNotes = n
         ]),
         currentOffer: counter,
         confidence: 0.82,
-        suggestedReplies: [`₪${cleanPrice(lp * 0.85).toLocaleString()}`, `₪${cleanPrice(lp * 0.88).toLocaleString()}`, 'מה הכי נמוך שאפשר?'],
+        suggestedReplies: [`₪${cleanPrice(lp * 0.85).toLocaleString()}`, `₪${cleanPrice(lp * 0.88).toLocaleString()}`, 'יש גמישות?'],
       };
     }
 
