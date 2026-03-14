@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
 
     // in-memory fallback
     let filtered = inMemory.filter(l => l.isActive !== false);
-    if (req.query.category)  filtered = filtered.filter(l => l.categoryEn === req.query.category);
+    if (req.query.category)  filtered = filtered.filter(l => l.categoryEn === req.query.category || l.category === req.query.category);
     if (req.query.condition) filtered = filtered.filter(l => l.condition === req.query.condition);
     if (req.query.location)  filtered = filtered.filter(l => l.location.toLowerCase().includes(req.query.location.toLowerCase()));
     if (req.query.minPrice)  filtered = filtered.filter(l => l.price >= parseFloat(req.query.minPrice));

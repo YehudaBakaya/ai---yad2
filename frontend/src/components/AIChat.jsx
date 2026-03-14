@@ -57,6 +57,22 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
         if (deal.status === 'approved' && deal.sellerContact) {
           setRevealedContact(deal.sellerContact);
         }
+        if (deal.status === 'countered' && deal.counterPrice) {
+          // Inject counter offer as AI message in chat
+          const counterMsg = {
+            id: Date.now(),
+            text: `🔄 המוכר שלח הצעה נגדית!\n\nהמוכר מציע לך את המוצר ב־₪${deal.counterPrice.toLocaleString()}${deal.counterMessage ? `\n\n"${deal.counterMessage}"` : ''}\n\nהאם תקבל את ההצעה?`,
+            sender: 'ai',
+            timestamp: new Date(),
+            counterOffer: deal.counterPrice,
+          };
+          setMessages(prev => [...prev, counterMsg]);
+          setCurrentOffer(deal.counterPrice);
+          setDealReached(false);
+          setDealStatus(null); // back to chat mode
+          setDealId(null);
+          setSuggestedReplies(['מסכים!', `אני מציע ₪${Math.round(deal.counterPrice * 0.95).toLocaleString()}`, 'לא מסכים, נשאר בהצעה שלי']);
+        }
       }
     });
     return unsubscribe;
@@ -163,7 +179,7 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
         <div className="bg-slate-700/60 border border-emerald-500/30 rounded-xl px-5 py-3 text-center">
           <div className="text-xs text-gray-400 mb-1">מחיר סגירה מאושר</div>
           <div className="text-3xl font-extrabold text-emerald-400">₪{currentOffer.toLocaleString()}</div>
-          <div className="text-xs text-blue-400 mt-1 font-medium">
+          <div className="text-xs text-emerald-400 mt-1 font-medium">
             חסכת ₪{Math.abs(savings).toLocaleString()} ({savingsPct}% מהמחיר המקורי)
           </div>
         </div>
@@ -216,7 +232,7 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
             setDealId(null);
             setSuggestedReplies(['מה המינימום שלך?', 'אני מציע יותר', 'בוא נפגש באמצע']);
           }}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-2.5 rounded-xl hover:scale-[1.02] transition-all"
+          className="w-full bg-gradient-to-r from-emerald-600 to-purple-600 text-white font-bold py-2.5 rounded-xl hover:scale-[1.02] transition-all"
         >
           נסה שוב עם הצעה טובה יותר
         </button>
@@ -248,16 +264,16 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
   /* ── DEAL REACHED — submit to seller ── */
   if (dealReached) {
     return (
-      <div className="bg-slate-800 border border-blue-500/40 rounded-xl p-6 text-center animate-bounceIn shadow-xl shadow-black/30">
-        <div className="w-16 h-16 rounded-full bg-blue-500/20 border-2 border-blue-500/60 flex items-center justify-center mx-auto mb-4">
-          <Sparkles size={28} className="text-blue-400" />
+      <div className="bg-slate-800 border border-emerald-500/40 rounded-xl p-6 text-center animate-bounceIn shadow-xl shadow-black/30">
+        <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500/60 flex items-center justify-center mx-auto mb-4">
+          <Sparkles size={28} className="text-emerald-400" />
         </div>
         <h3 className="text-xl font-extrabold text-white mb-1">🤝 הגענו להסכמה!</h3>
         <p className="text-gray-400 text-sm mb-5">שלח את ההצעה למוכר לאישור סופי</p>
 
         <div className="bg-slate-700/60 border border-slate-600 rounded-xl px-6 py-4 mb-5">
           <div className="text-xs text-gray-400 mb-1">מחיר מוסכם</div>
-          <div className="text-3xl font-extrabold text-blue-400">₪{currentOffer.toLocaleString()}</div>
+          <div className="text-3xl font-extrabold text-emerald-400">₪{currentOffer.toLocaleString()}</div>
           <div className="text-xs text-gray-500 mt-1 line-through">₪{listingPrice.toLocaleString()}</div>
           <div className="text-xs text-emerald-400 mt-1 font-medium">
             חיסכון: ₪{Math.abs(savings).toLocaleString()} ({savingsPct}%)
@@ -267,7 +283,7 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
         <button
           onClick={submitDealToSeller}
           disabled={submitting}
-          className="w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
+          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
         >
           {submitting
             ? <><Loader2 size={16} className="animate-spin" /> שולח...</>
@@ -282,7 +298,7 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
     <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden flex flex-col shadow-xl shadow-black/30">
 
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-slate-700 bg-gradient-to-r from-purple-600/15 to-blue-600/10">
+      <div className="px-4 py-3 flex items-center justify-between border-b border-slate-700 bg-gradient-to-r from-purple-600/15 to-emerald-600/10">
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-purple-400" />
           <span className="font-bold text-white text-sm">סוכן AI — מתווך</span>
@@ -306,15 +322,15 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <TrendingDown size={13} className="text-blue-400 shrink-0" />
+          <TrendingDown size={13} className="text-emerald-400 shrink-0" />
           <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full transition-all duration-700"
+              className="h-full bg-gradient-to-r from-purple-500 to-emerald-500 rounded-full transition-all duration-700"
               style={{ width: `${meterPct}%` }}
             />
           </div>
           {savingsPct > 0 && (
-            <span className="text-xs font-bold text-blue-300">-{savingsPct}%</span>
+            <span className="text-xs font-bold text-emerald-300">-{savingsPct}%</span>
           )}
         </div>
       </div>
@@ -327,13 +343,13 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
             className={`flex items-end gap-2 animate-fadeIn ${msg.sender === 'user' ? 'flex-row' : 'flex-row-reverse'}`}
           >
             <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-white
-              ${msg.sender === 'user' ? 'bg-blue-600' : 'bg-gradient-to-br from-purple-600 to-indigo-600'}`}>
+              ${msg.sender === 'user' ? 'bg-emerald-600' : 'bg-gradient-to-br from-purple-600 to-indigo-600'}`}>
               {msg.sender === 'user' ? <User size={12} /> : <Bot size={12} />}
             </div>
 
             <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 shadow-md ${
               msg.sender === 'user'
-                ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-bl-none'
+                ? 'bg-emerald-600 text-white rounded-bl-none'
                 : 'bg-slate-700 text-gray-100 rounded-br-none'
             }`}>
               <p className="text-xs leading-relaxed">{msg.text}</p>

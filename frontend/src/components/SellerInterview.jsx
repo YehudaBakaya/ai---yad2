@@ -186,7 +186,7 @@ function AIBubble({ text, sub }) {
 function UserBubble({ text }) {
   return (
     <div className="flex justify-end">
-      <div className="bg-purple-600/80 border border-purple-500/40 rounded-2xl rounded-tr-none px-3.5 py-2 max-w-xs">
+      <div className="bg-emerald-600/80 border border-emerald-500/40 rounded-2xl rounded-tr-none px-3.5 py-2 max-w-xs">
         <p className="text-sm text-white">{text}</p>
       </div>
     </div>

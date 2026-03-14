@@ -73,10 +73,10 @@ export default function Register() {
 
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
               <span className="text-white font-extrabold text-[10px] tracking-tight">S2B</span>
             </div>
-            <span className="text-2xl font-extrabold text-white">S<span className="text-blue-400">2</span>B <span className="text-purple-400">AI</span></span>
+            <span className="text-2xl font-extrabold text-white">S<span className="text-emerald-400">2</span>B <span className="text-emerald-300">AI</span></span>
           </div>
           <h1 className="text-xl font-bold text-white mb-1">{t('reg.title')}</h1>
           <p className="text-gray-400 text-sm">{t('reg.sub')}</p>
@@ -159,7 +159,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
             >
               {loading ? (
                 <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('reg.loading')}</>
@@ -172,7 +172,7 @@ export default function Register() {
 
         <p className="text-center text-gray-400 text-sm mt-5">
           {t('reg.haveAccount')}{' '}
-          <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+          <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
             {t('reg.loginHere')}
           </Link>
         </p>
@@ -192,7 +192,7 @@ function FormField({ label, error, children }) {
 }
 
 const inputCls = (err) =>
-  `w-full bg-slate-700 border ${err ? 'border-red-500' : 'border-slate-600'} rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all`;
+  `w-full bg-slate-700 border ${err ? 'border-red-500' : 'border-slate-600'} rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all`;
 
 function GoogleIcon() {
   return (

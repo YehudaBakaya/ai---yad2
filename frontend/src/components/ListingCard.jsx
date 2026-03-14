@@ -30,8 +30,8 @@ export default function ListingCard({ listing }) {
 
   const conditionColor = {
     'חדש':         'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
-    'מעולה':       'bg-violet-500/20 text-violet-300 border border-violet-500/40',
-    'טוב':         'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40',
+    'מעולה':       'bg-purple-500/20 text-purple-300 border border-purple-500/40',
+    'טוב':         'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
     'סביר':        'bg-amber-500/20 text-amber-300 border border-amber-500/40',
     'דורש תיקון': 'bg-red-500/20 text-red-300 border border-red-500/40',
   };
@@ -52,7 +52,7 @@ export default function ListingCard({ listing }) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent group-hover:from-black/50 transition-all duration-300" />
 
           {/* Category badge */}
-          <div className="absolute top-2 right-2 bg-gradient-to-r from-violet-600/90 to-indigo-600/90 backdrop-blur text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg shadow-violet-500/30">
+          <div className="absolute top-2 right-2 bg-gradient-to-r from-emerald-700/90 to-emerald-600/90 backdrop-blur text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg shadow-emerald-500/30">
             {categoryLabel}
           </div>
 
@@ -76,11 +76,11 @@ export default function ListingCard({ listing }) {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-violet-300 transition-colors duration-200">
+          <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-emerald-300 transition-colors duration-200">
             {listing.title}
           </h3>
 
-          <div className="text-2xl font-extrabold mb-3 bg-gradient-to-r from-violet-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+          <div className="text-2xl font-extrabold mb-3 text-emerald-400">
             {listing.price === 0 ? t('card.free') : `₪${listing.price?.toLocaleString()}`}
           </div>
 
@@ -98,12 +98,12 @@ export default function ListingCard({ listing }) {
 
           <div className="flex flex-col gap-1.5 text-xs text-gray-400 border-t border-slate-700/60 pt-3">
             <div className="flex items-center gap-1.5">
-              <MapPin size={13} className="text-cyan-400 shrink-0" />
+              <MapPin size={13} className="text-emerald-400 shrink-0" />
               <span>{listing.location}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Calendar size={13} className="text-violet-400 shrink-0" />
+                <Calendar size={13} className="text-emerald-600 shrink-0" />
                 <span>{formatDate(listing.date)}</span>
               </div>
               <div className="flex items-center gap-1 text-gray-500">

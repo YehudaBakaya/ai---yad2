@@ -39,12 +39,12 @@ export default function PriceAnalysis({ title, category, price, condition }) {
 
   const config = {
     'עסקה טובה': {
-      border: 'border-blue-500/50',
-      bg:     'bg-blue-500/10',
-      badge:  'bg-blue-500/20 text-blue-300 border-blue-500/40',
-      icon:   <TrendingDown size={18} className="text-blue-400" />,
-      dot:    'bg-blue-500',
-      label:  'text-blue-300',
+      border: 'border-emerald-500/50',
+      bg:     'bg-emerald-500/10',
+      badge:  'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      icon:   <TrendingDown size={18} className="text-emerald-400" />,
+      dot:    'bg-emerald-500',
+      label:  'text-emerald-300',
     },
     'מחיר הוגן': {
       border: 'border-emerald-500/50',
@@ -109,7 +109,7 @@ export default function PriceAnalysis({ title, category, price, condition }) {
           {/* Three-column labels */}
           <div className="flex justify-between text-xs font-medium mb-1.5">
             <span className="text-emerald-400">₪{market.min.toLocaleString()}</span>
-            <span className="text-blue-400">ממוצע ₪{market.avg.toLocaleString()}</span>
+            <span className="text-gray-400">ממוצע ₪{market.avg.toLocaleString()}</span>
             <span className="text-red-400">₪{market.max.toLocaleString()}</span>
           </div>
 
@@ -144,7 +144,7 @@ export default function PriceAnalysis({ title, category, price, condition }) {
         <div className="grid grid-cols-3 gap-3 text-center">
           {[
             { label: 'מינימום',  val: market.min, cls: 'text-emerald-400' },
-            { label: 'ממוצע',    val: market.avg, cls: 'text-blue-400' },
+            { label: 'ממוצע',    val: market.avg, cls: 'text-gray-300' },
             { label: 'מקסימום', val: market.max, cls: 'text-red-400' },
           ].map(({ label, val, cls }) => (
             <div key={label} className="bg-slate-700/60 border border-slate-600 rounded-xl py-2.5">

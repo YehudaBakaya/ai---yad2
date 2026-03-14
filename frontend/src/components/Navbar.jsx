@@ -13,11 +13,11 @@ export default function Navbar() {
   const { favoritesList } = useFavorites();
   const { isDark, toggle: toggleTheme } = useTheme();
   const { t, toggleLang } = useLanguage();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen,     setMenuOpen]     = useState(false);
   const [pendingDeals, setPendingDeals] = useState(0);
-  const [dealToast, setDealToast] = useState(false);
+  const [dealToast,    setDealToast]    = useState(false);
   const prevDealsRef = useRef(0);
-  const menuRef = useRef(null);
+  const menuRef      = useRef(null);
 
   useEffect(() => {
     const handler = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
@@ -63,20 +63,20 @@ export default function Navbar() {
       </div>
     )}
     <nav className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-40 shadow-lg shadow-black/20">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 justify-between">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:scale-110">
+        <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+          <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all duration-300 group-hover:scale-110">
             <span className="text-white font-extrabold text-[11px] tracking-tight">S2B</span>
           </div>
-          <span className="text-white font-extrabold text-xl tracking-tight">
-            S<span className="text-cyan-400">2</span>B <span className="text-blue-400">AI</span>
+          <span className="text-white font-extrabold text-xl tracking-tight hidden sm:inline">
+            S<span className="text-emerald-400">2</span>B <span className="text-emerald-300">AI</span>
           </span>
         </Link>
 
-        {/* Center links */}
-        <div className="flex items-center gap-1">
+        {/* Center nav links */}
+        <div className="flex items-center gap-1 flex-shrink-0">
           <NavLink to="/"        icon={<Home size={17} />} label={t('navbar.home')}     active={isActive('/')} />
           <NavLink to="/listings" icon={<List size={17} />} label={t('navbar.listings')} active={isActive('/listings')} />
         </div>
@@ -106,7 +106,7 @@ export default function Navbar() {
               {/* Create listing */}
               <Link
                 to="/create"
-                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 text-sm shadow-md shadow-blue-500/20 hover:shadow-blue-500/40 transition-shadow"
+                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 text-sm shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-shadow"
               >
                 <Plus size={16} />
                 <span className="hidden sm:inline">{t('navbar.publish')}</span>
@@ -147,7 +147,7 @@ export default function Navbar() {
                       className="flex items-center justify-between gap-2 px-4 py-2.5 text-gray-300 hover:bg-slate-700/60 hover:text-white transition-colors text-sm"
                     >
                       <div className="flex items-center gap-2">
-                        <LayoutList size={15} className="text-blue-400" />
+                        <LayoutList size={15} className="text-emerald-400" />
                         {t('navbar.myListings')}
                       </div>
                       {pendingDeals > 0 && (
@@ -223,7 +223,7 @@ export default function Navbar() {
               </Link>
               <Link
                 to="/register"
-                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg text-sm shadow-md shadow-blue-500/20"
+                className="btn-shimmer text-white font-bold py-2 px-4 rounded-lg text-sm shadow-md shadow-emerald-500/20"
               >
                 {t('navbar.register')}
               </Link>
@@ -231,6 +231,7 @@ export default function Navbar() {
           )}
         </div>
       </div>
+
     </nav>
     </>
   );
@@ -245,7 +246,7 @@ function NavLink({ to, icon, label, active }) {
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>
-      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-blue-500 rounded-full" />}
+      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-emerald-500 rounded-full" />}
     </Link>
   );
 }

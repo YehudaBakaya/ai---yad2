@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, TrendingUp, Zap, ArrowLeft } from 'lucide-react';
+import { Search, TrendingUp, Zap, ArrowLeft, Sparkles } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
 import { listingsAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useRecommendations } from '../hooks/useRecommendations';
 
 const CATEGORY_IDS = [
   { id: 'real_estate', icon: '🏠', color: 'from-blue-600 to-blue-800' },
@@ -26,6 +28,8 @@ const FEATURED_CACHE = 'yad2_featured_v3';
 
 export default function Home() {
   const { t, tCat } = useLanguage();
+  const { user } = useAuth();
+  const { recommendations, loading: recLoading, bestCategory, mode: recMode } = useRecommendations();
   const [listings, setListings]       = useState([]);
   const [loading, setLoading]         = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,9 +63,9 @@ export default function Home() {
 
       {/* ===== HERO ===== */}
       <section className="hero-gradient text-white py-20 px-4 relative overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-800/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-20 -right-20 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-900/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center mb-10 animate-fadeIn">
@@ -70,7 +74,7 @@ export default function Home() {
               <span>{t('home.aiPowered')}</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight">
-              {t('home.title')} <span className="bg-gradient-to-r from-violet-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">AI</span>
+              {t('home.title')} <span className="text-emerald-400">AI</span>
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-xl mx-auto">
               {t('home.subtitle')}
@@ -91,7 +95,7 @@ export default function Home() {
             </div>
             <button
               type="submit"
-              className="bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-violet-500/30"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/30"
             >
               {t('home.search')}
             </button>
@@ -101,7 +105,7 @@ export default function Home() {
           <div className="flex justify-center gap-8 mt-10 animate-fadeIn">
             {STAT_KEYS.map((s) => (
               <div key={s.key} className="text-center">
-                <div className="text-2xl font-extrabold bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent">{s.value}</div>
+                <div className="text-2xl font-extrabold text-emerald-400">{s.value}</div>
                 <div className="text-white/60 text-xs mt-0.5">{t(s.key)}</div>
               </div>
             ))}
@@ -112,7 +116,7 @@ export default function Home() {
       {/* ===== CATEGORIES ===== */}
       <section className="max-w-6xl mx-auto px-4 py-14">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-1 h-7 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full" />
+          <div className="w-1 h-7 bg-gradient-to-b from-emerald-500 to-emerald-700 rounded-full" />
           <h2 className="text-2xl font-bold text-white">{t('home.categories')}</h2>
         </div>
 
@@ -143,6 +147,60 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ===== RECOMMENDATIONS ===== */}
+      {(recLoading || recommendations.length > 0) && (
+        <section className="max-w-6xl mx-auto px-4 py-10 border-t border-slate-800">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-7 bg-gradient-to-b from-purple-500 to-violet-600 rounded-full" />
+              <Sparkles className="text-purple-400" size={22} />
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  {recMode === 'personalized' ? 'מומלץ עבורך' : 'פופולרי עכשיו'}
+                </h2>
+                <p className="text-gray-500 text-xs mt-0.5">
+                  {recMode === 'personalized'
+                    ? `בהתבסס על המועדפים שלך · ${tCat(bestCategory)}`
+                    : 'הוסף מועדפים וקבל המלצות אישיות'}
+                </p>
+              </div>
+            </div>
+            {recMode === 'personalized' && bestCategory && (
+              <Link
+                to={`/listings?category=${bestCategory}`}
+                className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors group"
+              >
+                <span>עוד ב{tCat(bestCategory)}</span>
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+              </Link>
+            )}
+            {recMode === 'popular' && (
+              <Link
+                to="/listings"
+                className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors group"
+              >
+                <span>כל המוצרים</span>
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+              </Link>
+            )}
+          </div>
+
+          {recLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-slate-800 rounded-xl h-72 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recommendations.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ===== FEATURED LISTINGS ===== */}
       <section className="max-w-6xl mx-auto px-4 py-10 border-t border-slate-800">
         <div className="flex items-center justify-between mb-8">
@@ -153,7 +211,7 @@ export default function Home() {
           </div>
           <Link
             to="/listings"
-            className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors group"
+            className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors group"
           >
             <span>{t('home.viewAll')}</span>
             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
@@ -177,7 +235,7 @@ export default function Home() {
         <div className="mt-10 text-center">
           <Link
             to="/listings"
-            className="btn-shimmer inline-block text-white font-bold py-3 px-10 rounded-xl shadow-lg shadow-blue-500/30"
+            className="btn-shimmer inline-block text-white font-bold py-3 px-10 rounded-xl shadow-lg shadow-emerald-500/30"
           >
             {t('home.viewAllBtn')}
           </Link>
@@ -187,14 +245,14 @@ export default function Home() {
       {/* ===== CTA ===== */}
       <section className="py-14 px-4 mt-6">
         <div className="max-w-3xl mx-auto bg-gradient-to-br from-slate-800 to-slate-800/50 border border-slate-700 rounded-2xl p-10 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/15 to-cyan-600/10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/10 to-emerald-400/5 pointer-events-none" />
           <div className="relative z-10">
             <div className="text-4xl mb-4">🚀</div>
             <h2 className="text-3xl font-bold text-white mb-3">{t('home.ctaTitle')}</h2>
             <p className="text-gray-400 mb-7 text-base max-w-md mx-auto">{t('home.ctaDesc')}</p>
             <Link
               to="/create"
-              className="inline-block bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 text-white font-bold py-3.5 px-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/30"
+              className="inline-block bg-emerald-600 hover:bg-emerald-500 text-slate-900 font-bold py-3.5 px-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/30"
             >
               {t('home.ctaBtn')}
             </Link>

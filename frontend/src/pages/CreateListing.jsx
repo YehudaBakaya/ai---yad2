@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronLeft, ChevronRight, MapPin, Tag, FileText, Bot, Sparkles, X, Upload } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, MapPin, Tag, FileText, Bot, Sparkles, X, Upload, Eye, Pencil } from 'lucide-react';
 import SmartDescription from '../components/SmartDescription';
 import SellerInterview from '../components/SellerInterview';
 import { listingsAPI } from '../services/api';
@@ -20,7 +20,7 @@ const categories = [
 
 const conditions = [
   { value: 'חדש',         color: 'border-emerald-500 bg-emerald-500/20 text-emerald-300' },
-  { value: 'מעולה',       color: 'border-blue-500 bg-blue-500/20 text-blue-300' },
+  { value: 'מעולה',       color: 'border-purple-500 bg-purple-500/20 text-purple-300' },
   { value: 'טוב',         color: 'border-amber-500 bg-amber-500/20 text-amber-300' },
   { value: 'סביר',        color: 'border-orange-500 bg-orange-500/20 text-orange-300' },
   { value: 'דורש תיקון', color: 'border-red-500 bg-red-500/20 text-red-300' },
@@ -31,6 +31,7 @@ const STEPS = [
   { key: 'create.step.details', icon: <MapPin size={16} /> },
   { key: 'create.step.desc',    icon: <FileText size={16} /> },
   { key: 'create.step.agent',   icon: <Bot size={16} /> },
+  { key: 'create.step.review',  icon: <Eye size={16} /> },
 ];
 
 export default function CreateListing() {
@@ -155,7 +156,7 @@ export default function CreateListing() {
               <button
                 onClick={() => i < step && setStep(i)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300
-                  ${i === step   ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105' :
+                  ${i === step   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-105' :
                     i < step     ? 'bg-emerald-600/30 text-emerald-300 cursor-pointer hover:bg-emerald-600/50' :
                                    'bg-slate-800 text-gray-500 cursor-default'}`}
               >
@@ -196,13 +197,13 @@ export default function CreateListing() {
                       onClick={() => set('category', cat.id)}
                       className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-medium transition-all duration-200
                         ${formData.category === cat.id
-                          ? 'border-blue-500 bg-blue-500/20 text-blue-300 scale-105 shadow-md shadow-blue-500/20'
+                          ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300 scale-105 shadow-md shadow-emerald-500/20'
                           : 'border-slate-600 bg-slate-700/60 text-gray-400 hover:border-slate-500 hover:text-gray-200'}`}
                     >
                       <span className="text-2xl">{cat.icon}</span>
                       <span>{tCat(cat.id)}</span>
                       {formData.category === cat.id && (
-                        <span className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
                           <Check size={10} className="text-white" />
                         </span>
                       )}
@@ -270,7 +271,7 @@ export default function CreateListing() {
                     <div className="text-3xl">{selectedCat?.icon || '📦'}</div>
                     <div>
                       <p className="text-white font-bold text-sm">{formData.title}</p>
-                      <p className="text-blue-400 font-bold">
+                      <p className="text-emerald-400 font-bold">
                         {formData.price === '' ? '—' : formData.price === '0' ? t('common.free') : `₪${Number(formData.price).toLocaleString()}`}
                       </p>
                       <div className="flex gap-2 mt-1 text-xs text-gray-400">
@@ -328,7 +329,7 @@ export default function CreateListing() {
                   onClick={() => images.length < 5 && fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-xl p-5 text-center transition-all
                     ${images.length < 5
-                      ? 'border-slate-600 hover:border-blue-500/60 hover:bg-blue-500/5 cursor-pointer'
+                      ? 'border-slate-600 hover:border-emerald-500/60 hover:bg-emerald-500/5 cursor-pointer'
                       : 'border-slate-700 opacity-50 cursor-not-allowed'}`}
                 >
                   <input
@@ -343,7 +344,7 @@ export default function CreateListing() {
                   {images.length < 5 ? (
                     <>
                       <p className="text-gray-400 text-sm">
-                        {t('create.s2.drop')} <span className="text-blue-400 font-medium">{t('create.s2.click')}</span>
+                        {t('create.s2.drop')} <span className="text-emerald-400 font-medium">{t('create.s2.click')}</span>
                       </p>
                       <p className="text-gray-600 text-xs mt-1">{t('create.s2.imgTypes')}</p>
                     </>
@@ -358,7 +359,7 @@ export default function CreateListing() {
                       <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-600">
                         <img src={img.dataUrl} alt={img.name} className="w-full h-full object-cover" />
                         {idx === 0 && (
-                          <span className="absolute bottom-1 left-1 bg-blue-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                          <span className="absolute bottom-1 left-1 bg-emerald-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
                             {t('create.s2.primary')}
                           </span>
                         )}
@@ -413,6 +414,68 @@ export default function CreateListing() {
             </div>
           )}
 
+          {/* ── STEP 4: Review ── */}
+          {step === 4 && (
+            <div className="p-7 space-y-4">
+              <StepTitle icon="👁️" title="סקירה לפני פרסום" sub="בדוק את הפרטים ועדכן לפני שתפרסם" />
+
+              {/* Basic */}
+              <ReviewSection label="פרטים בסיסיים" onEdit={() => setStep(0)}>
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{selectedCat?.icon || '📦'}</span>
+                  <div>
+                    <p className="text-white font-bold">{formData.title}</p>
+                    <p className="text-emerald-400 font-bold text-lg">
+                      {formData.price === '0' ? t('common.free') : `₪${Number(formData.price).toLocaleString()}`}
+                    </p>
+                    <p className="text-gray-400 text-xs">{tCat(formData.category)}</p>
+                  </div>
+                </div>
+              </ReviewSection>
+
+              {/* Details */}
+              <ReviewSection label="מיקום ומצב" onEdit={() => setStep(1)}>
+                <div className="flex gap-4 text-sm text-gray-300">
+                  {formData.location && <span>📍 {formData.location}</span>}
+                  <span>• {tCond(formData.condition)}</span>
+                </div>
+              </ReviewSection>
+
+              {/* Description */}
+              <ReviewSection label="תיאור" onEdit={() => setStep(2)}>
+                {formData.description ? (
+                  <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">{formData.description}</p>
+                ) : (
+                  <p className="text-gray-500 text-sm italic">לא הוזן תיאור</p>
+                )}
+                {images.length > 0 && (
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {images.map((img, i) => (
+                      <img key={i} src={img.dataUrl} alt="" className="w-14 h-14 rounded-lg object-cover border border-slate-600" />
+                    ))}
+                  </div>
+                )}
+              </ReviewSection>
+
+              {/* Agent settings */}
+              <ReviewSection label="הגדרות סוכן AI" onEdit={() => { setInterviewDone(false); setStep(3); }}>
+                {sellerNotes ? (
+                  <div className="text-sm text-gray-300 space-y-1">
+                    {sellerNotes.minPrice && <p>💰 מחיר מינימום: <span className="text-white font-bold">₪{Number(sellerNotes.minPrice).toLocaleString()}</span></p>}
+                    {sellerNotes.flexibility && <p>📊 גמישות: <span className="text-white">{sellerNotes.flexibility}</span></p>}
+                    {sellerNotes.reason && <p>📝 סיבת המכירה: <span className="text-white">{sellerNotes.reason}</span></p>}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm italic">ללא הגדרות סוכן</p>
+                )}
+              </ReviewSection>
+
+              {errors.submit && (
+                <p className="text-red-400 text-sm text-center">{errors.submit}</p>
+              )}
+            </div>
+          )}
+
           {/* Navigation */}
           <div className="px-7 pb-7 flex gap-3">
             {step > 0 && (
@@ -430,7 +493,8 @@ export default function CreateListing() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="flex-1 btn-shimmer text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-transform"
+                disabled={step === 3 && !interviewDone}
+                className="flex-1 btn-shimmer text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {t('create.next')}
                 <ChevronLeft size={18} />
@@ -439,8 +503,8 @@ export default function CreateListing() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading || !interviewDone}
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+                disabled={loading}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 {loading ? (
                   <>
@@ -498,5 +562,24 @@ function Field({ label, error, children }) {
   );
 }
 
+function ReviewSection({ label, onEdit, children }) {
+  return (
+    <div className="bg-slate-700/50 border border-slate-600 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+        >
+          <Pencil size={11} />
+          ערוך
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 const inputCls = (error) =>
-  `w-full bg-slate-700 border ${error ? 'border-red-500' : 'border-slate-600'} rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm`;
+  `w-full bg-slate-700 border ${error ? 'border-red-500' : 'border-slate-600'} rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm`;

@@ -74,7 +74,7 @@ export default function Listings() {
         {/* Header */}
         <div className="mb-6 animate-fadeIn">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-1 h-7 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full" />
+            <div className="w-1 h-7 bg-gradient-to-b from-emerald-500 to-emerald-700 rounded-full" />
             <h1 className="text-3xl font-bold text-white">
               {t('listings.title')}
               {!loading && (
@@ -86,7 +86,7 @@ export default function Listings() {
           </div>
 
           <div className="flex gap-2">
-            <div className="flex-1 flex items-center bg-slate-800 border border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
+            <div className="flex-1 flex items-center bg-slate-800 border border-slate-700 rounded-xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/20 transition-all">
               <Search size={18} className="text-gray-400 mx-3 shrink-0" />
               <input
                 type="text"
@@ -105,13 +105,13 @@ export default function Listings() {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 py-3 px-4 rounded-xl border font-medium text-sm transition-all duration-200
                 ${showFilters || activeFiltersCount > 0
-                  ? 'bg-blue-600 border-blue-600 text-white'
-                  : 'bg-slate-800 border-slate-700 text-gray-300 hover:border-blue-500 hover:text-white'}`}
+                  ? 'bg-emerald-600 border-emerald-600 text-white'
+                  : 'bg-slate-800 border-slate-700 text-gray-300 hover:border-emerald-500 hover:text-white'}`}
             >
               <SlidersHorizontal size={17} />
               <span className="hidden sm:inline">{t('listings.filters')}</span>
               {activeFiltersCount > 0 && (
-                <span className="bg-white text-blue-600 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="bg-white text-emerald-700 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
@@ -127,8 +127,8 @@ export default function Listings() {
               onClick={() => handleFilterChange('category', id)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200
                 ${filters.category === id
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-105'
-                  : 'bg-slate-800 border border-slate-700 text-gray-300 hover:border-blue-500 hover:text-white'}`}
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30 scale-105'
+                  : 'bg-slate-800 border border-slate-700 text-gray-300 hover:border-emerald-500 hover:text-white'}`}
             >
               <span>{CATEGORY_ICONS[id]}</span>
               <span>{id === '' ? t('cat.all') : tCat(id)}</span>
@@ -143,7 +143,7 @@ export default function Listings() {
               <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 sticky top-24">
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="font-bold text-white flex items-center gap-2">
-                    <Filter size={16} className="text-blue-400" />
+                    <Filter size={16} className="text-emerald-400" />
                     {t('listings.advFilters')}
                   </h3>
                   {activeFiltersCount > 0 && (
@@ -163,14 +163,14 @@ export default function Listings() {
                         placeholder={t('listings.min')}
                         value={filters.minPrice}
                         onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                        className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-sm focus:border-blue-500 focus:outline-none"
+                        className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-sm focus:border-emerald-500 focus:outline-none"
                       />
                       <input
                         type="number"
                         placeholder={t('listings.max')}
                         value={filters.maxPrice}
                         onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                        className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-sm focus:border-blue-500 focus:outline-none"
+                        className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-sm focus:border-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -182,7 +182,7 @@ export default function Listings() {
                       placeholder={t('listings.cityArea')}
                       value={filters.location}
                       onChange={(e) => handleFilterChange('location', e.target.value)}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-sm focus:border-blue-500 focus:outline-none"
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-sm focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
 
@@ -195,8 +195,8 @@ export default function Listings() {
                           onClick={() => handleFilterChange('condition', filters.condition === cond ? '' : cond)}
                           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                             filters.condition === cond
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-slate-700 text-gray-400 hover:text-white border border-slate-600 hover:border-blue-500'
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-700 text-gray-400 hover:text-white border border-slate-600 hover:border-emerald-500'
                           }`}
                         >
                           {tCond(cond)}
@@ -230,7 +230,7 @@ export default function Listings() {
                 <p className="text-gray-500 text-sm mb-6">{t('listings.tryChange')}</p>
                 <button
                   onClick={handleClearFilters}
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition-all hover:scale-105"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-medium transition-all hover:scale-105"
                 >
                   {t('listings.clearFilters')}
                 </button>

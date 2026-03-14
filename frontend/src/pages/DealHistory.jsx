@@ -64,7 +64,7 @@ export default function DealHistory() {
         {/* Content */}
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-violet-500/40 border-t-violet-400 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-emerald-500/40 border-t-emerald-400 rounded-full animate-spin" />
           </div>
         ) : deals.length === 0 ? (
           <div className="text-center py-16">
@@ -89,7 +89,7 @@ function TabBtn({ active, onClick, icon, label, count }) {
       onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
         active
-          ? 'bg-violet-600 border-violet-500 text-white shadow-md shadow-violet-500/30'
+          ? 'bg-emerald-600 border-emerald-500 text-white shadow-md shadow-emerald-500/30'
           : 'bg-slate-800 border-slate-700 text-gray-400 hover:text-white hover:border-slate-600'
       }`}
     >
@@ -151,13 +151,13 @@ function DealCard({ deal, isBuyer }) {
               <p className="text-white text-sm font-medium">{deal.sellerContact.name}</p>
             )}
             {deal.sellerContact.phone && (
-              <a href={`tel:${deal.sellerContact.phone}`} className="flex items-center gap-1.5 text-cyan-400 text-sm hover:underline">
+              <a href={`tel:${deal.sellerContact.phone}`} className="flex items-center gap-1.5 text-emerald-400 text-sm hover:underline">
                 <Phone size={13} />
                 {deal.sellerContact.phone}
               </a>
             )}
             {deal.sellerContact.email && (
-              <a href={`mailto:${deal.sellerContact.email}`} className="flex items-center gap-1.5 text-cyan-400 text-sm hover:underline">
+              <a href={`mailto:${deal.sellerContact.email}`} className="flex items-center gap-1.5 text-emerald-400 text-sm hover:underline">
                 <Mail size={13} />
                 {deal.sellerContact.email}
               </a>

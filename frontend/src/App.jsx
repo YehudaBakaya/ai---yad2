@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import RecommendationsWidget from './components/RecommendationsWidget';
 import Home from './pages/Home';
 import Listings from './pages/Listings';
 import ListingDetail from './pages/ListingDetail';
@@ -25,6 +26,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-slate-900">
           <Navbar />
+          <RecommendationsWidget />
           <Routes>
             {/* ── Public ── */}
             <Route path="/"              element={<Home />} />

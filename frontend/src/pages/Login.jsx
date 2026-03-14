@@ -80,10 +80,10 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
               <span className="text-white font-extrabold text-[10px] tracking-tight">S2B</span>
             </div>
-            <span className="text-2xl font-extrabold text-white">S<span className="text-blue-400">2</span>B <span className="text-purple-400">AI</span></span>
+            <span className="text-2xl font-extrabold text-white">S<span className="text-emerald-400">2</span>B <span className="text-emerald-300">AI</span></span>
           </div>
           <h1 className="text-xl font-bold text-white mb-1">{t('login.welcome')}</h1>
           <p className="text-gray-400 text-sm">{t('login.sub')}</p>
@@ -160,7 +160,7 @@ export default function Login() {
                   value={form.email}
                   onChange={e => set('email', e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                 />
               </div>
             </div>
@@ -174,7 +174,7 @@ export default function Login() {
                   value={form.password}
                   onChange={e => set('password', e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-10 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-10 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200">
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -191,7 +191,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-shimmer text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-60"
+              className="w-full btn-shimmer text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-60"
             >
               {loading ? (
                 <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('login.loading')}</>
@@ -214,7 +214,7 @@ export default function Login() {
 
         <p className="text-center text-gray-400 text-sm mt-5">
           {t('login.noAccount')}{' '}
-          <Link to="/register" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+          <Link to="/register" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
             {t('login.register')}
           </Link>
         </p>

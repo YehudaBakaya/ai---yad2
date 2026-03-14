@@ -70,7 +70,7 @@ function EditModal({ listing, onClose, onSaved }) {
               type="text"
               value={form.title}
               onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-              className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500 transition-all"
+              className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
             />
           </div>
 
@@ -81,7 +81,7 @@ function EditModal({ listing, onClose, onSaved }) {
                 type="number"
                 value={form.price}
                 onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500 transition-all"
+                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
               />
             </div>
             <div>
@@ -90,7 +90,7 @@ function EditModal({ listing, onClose, onSaved }) {
                 type="text"
                 value={form.location}
                 onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500 transition-all"
+                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
               />
             </div>
           </div>
@@ -105,7 +105,7 @@ function EditModal({ listing, onClose, onSaved }) {
                   onClick={() => setForm(p => ({ ...p, condition: c }))}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
                     ${form.condition === c
-                      ? 'bg-violet-500/20 border-violet-500 text-violet-300'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
                       : 'bg-slate-700 border-slate-600 text-gray-400 hover:border-slate-500'}`}
                 >
                   {tCond(c)}
@@ -120,7 +120,7 @@ function EditModal({ listing, onClose, onSaved }) {
               value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               rows={3}
-              className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500 transition-all resize-none"
+              className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all resize-none"
             />
           </div>
 
@@ -138,7 +138,7 @@ function EditModal({ listing, onClose, onSaved }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
           >
             {saving
               ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('myListings.edit.saving')}</>
@@ -223,17 +223,17 @@ function ListingRow({ listing, onEdit, onDelete }) {
           <div>
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <h3 className="font-bold text-white text-sm leading-snug line-clamp-2">{listing.title}</h3>
-              <span className="shrink-0 text-sm font-extrabold text-violet-400">
+              <span className="shrink-0 text-sm font-extrabold text-emerald-400">
                 {listing.price === 0 ? t('common.free') : `₪${listing.price?.toLocaleString()}`}
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 mb-3">
-              <span className="bg-violet-500/15 text-violet-300 border border-violet-500/30 px-2 py-0.5 rounded-full">
+              <span className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                 {listing.categoryEn ? tCat(listing.categoryEn) : listing.category}
               </span>
               <span className="flex items-center gap-1">
-                <Eye size={11} className="text-cyan-400" />
+                <Eye size={11} className="text-emerald-400" />
                 {listing.views?.toLocaleString() || 0} {t('myListings.views')}
               </span>
               <span className="text-gray-600">•</span>
@@ -270,7 +270,7 @@ function ListingRow({ listing, onEdit, onDelete }) {
             <div className="flex items-center gap-1">
               <button
                 onClick={() => onEdit(listing)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-violet-300 hover:bg-violet-500/10 transition-all"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all"
               >
                 <Pencil size={14} />
               </button>
@@ -284,7 +284,7 @@ function ListingRow({ listing, onEdit, onDelete }) {
 
               <Link
                 to={`/listings/${listing.id}`}
-                className="flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors mr-1"
+                className="flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-cyan-300 transition-colors mr-1"
               >
                 {t('myListings.manage')}
                 <ChevronLeft size={13} />
@@ -330,14 +330,14 @@ export default function MyListings() {
         <div className="flex items-center justify-between mb-8 animate-fadeIn">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-1 h-7 bg-gradient-to-b from-violet-500 to-cyan-500 rounded-full" />
+              <div className="w-1 h-7 bg-gradient-to-b from-emerald-500 to-emerald-700 rounded-full" />
               <h1 className="text-2xl font-extrabold text-white">{t('myListings.title')}</h1>
             </div>
             <p className="text-gray-400 text-sm mr-4">{t('myListings.sub')}</p>
           </div>
           <Link
             to="/create"
-            className="btn-shimmer text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-violet-500/20"
+            className="btn-shimmer text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-emerald-500/20"
           >
             <Plus size={16} />
             <span className="hidden sm:inline">{t('myListings.new')}</span>
@@ -347,8 +347,8 @@ export default function MyListings() {
         {/* Stats bar */}
         {!loading && listings.length > 0 && (
           <div className="grid grid-cols-3 gap-3 mb-6 animate-fadeIn">
-            <StatCard label={t('myListings.stat.listings')} value={listings.length}                             icon={<Tag size={16} className="text-violet-400" />}  color="violet" />
-            <StatCard label={t('myListings.stat.views')}    value={totalViews.toLocaleString()}               icon={<Eye size={16} className="text-cyan-400" />}    color="cyan" />
+            <StatCard label={t('myListings.stat.listings')} value={listings.length}                             icon={<Tag size={16} className="text-emerald-400" />}  color="emerald" />
+            <StatCard label={t('myListings.stat.views')}    value={totalViews.toLocaleString()}               icon={<Eye size={16} className="text-emerald-400" />}    color="emerald" />
             <StatCard label={t('myListings.stat.cats')}     value={new Set(listings.map(l => l.categoryEn)).size} icon={<TrendingUp size={16} className="text-emerald-400" />} color="emerald" />
           </div>
         )}
@@ -367,7 +367,7 @@ export default function MyListings() {
             <p className="text-gray-400 text-sm mb-7">{t('myListings.emptyDesc')}</p>
             <Link
               to="/create"
-              className="inline-block bg-gradient-to-r from-emerald-500 to-violet-600 hover:from-emerald-400 hover:to-violet-500 text-white font-bold py-3 px-8 rounded-xl transition-all hover:scale-105 shadow-lg shadow-emerald-500/30"
+              className="inline-block bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-8 rounded-xl transition-all hover:scale-105 shadow-lg shadow-emerald-500/30"
             >
               {t('myListings.firstBtn')}
             </Link>
@@ -407,8 +407,6 @@ export default function MyListings() {
 
 function StatCard({ label, value, icon, color }) {
   const colors = {
-    violet:  'from-violet-500/10 to-violet-500/5 border-violet-500/20',
-    cyan:    'from-cyan-500/10 to-cyan-500/5 border-cyan-500/20',
     emerald: 'from-emerald-500/10 to-emerald-500/5 border-emerald-500/20',
   };
   return (

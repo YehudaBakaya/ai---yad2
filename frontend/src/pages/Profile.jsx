@@ -102,7 +102,7 @@ export default function Profile() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center gap-3 justify-center mb-1">
-            <div className="w-1 h-7 bg-gradient-to-b from-violet-500 to-cyan-500 rounded-full" />
+            <div className="w-1 h-7 bg-gradient-to-b from-emerald-500 to-emerald-700 rounded-full" />
             <h1 className="text-2xl font-extrabold text-white">{t('profile.title')}</h1>
           </div>
           <p className="text-gray-400 text-sm">{t('profile.sub')}</p>
@@ -113,7 +113,7 @@ export default function Profile() {
           {/* Avatar */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full ring-4 ring-violet-500/30 overflow-hidden bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full ring-4 ring-emerald-500/30 overflow-hidden bg-gradient-to-br from-emerald-700 to-emerald-600 flex items-center justify-center">
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -122,7 +122,7 @@ export default function Profile() {
               </div>
               <button
                 onClick={() => fileRef.current?.click()}
-                className="absolute -bottom-1 -left-1 w-8 h-8 bg-violet-600 hover:bg-violet-500 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
+                className="absolute -bottom-1 -left-1 w-8 h-8 bg-emerald-600 hover:bg-emerald-500 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
               >
                 <Camera size={14} className="text-white" />
               </button>
@@ -147,7 +147,7 @@ export default function Profile() {
                 value={form.name}
                 onChange={e => { setForm(p => ({ ...p, name: e.target.value })); setError(''); }}
                 placeholder={t('profile.name')}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
               />
             </div>
           </div>
@@ -177,7 +177,7 @@ export default function Profile() {
                 value={form.phone}
                 onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
                 placeholder="050-0000000"
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 transition-all"
+                className="w-full bg-slate-700 border border-slate-600 rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
               />
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function Profile() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full btn-shimmer text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-60"
+            className="w-full btn-shimmer text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-60"
           >
             {saving
               ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('profile.saving')}</>

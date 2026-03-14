@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock } from 'lucide-react';
-import { subscribeToListingDeals, updateDeal } from '../services/firestoreService';
+import { CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { subscribeToListingDeals, updateDeal, counterDeal } from '../services/firestoreService';
 import { listingsAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -28,6 +28,29 @@ export default function SellerDealsPanel({ listingId }) {
       }
       setDeals(prev => prev.map(d => d.id === dealId ? { ...d, status } : d));
     } catch {}
+  };
+
+  const [counterModal, setCounterModal] = useState(null); // { dealId, listingPrice, agreedPrice }
+  const [counterPrice, setCounterPrice] = useState('');
+  const [counterMsg,   setCounterMsg]   = useState('');
+  const [counterSaving, setCounterSaving] = useState(false);
+
+  const openCounterModal = (deal) => {
+    setCounterModal({ dealId: deal.id, listingPrice: deal.listingPrice, agreedPrice: deal.agreedPrice });
+    setCounterPrice(Math.round((deal.agreedPrice + deal.listingPrice) / 2).toString());
+    setCounterMsg('');
+  };
+
+  const submitCounter = async () => {
+    if (!counterModal || !counterPrice) return;
+    setCounterSaving(true);
+    try {
+      await counterDeal(counterModal.dealId, counterPrice, counterMsg);
+      setCounterModal(null);
+      setDeals(prev => prev.map(d => d.id === counterModal.dealId ? { ...d, status: 'countered' } : d));
+    } catch {} finally {
+      setCounterSaving(false);
+    }
   };
 
   const pending  = deals.filter(d => d.status === 'pending');
@@ -64,41 +87,95 @@ export default function SellerDealsPanel({ listingId }) {
         ) : (
           <>
             {pending.map(deal => (
-              <DealCard key={deal.id} deal={deal} onDecision={handleDecision} />
+              <DealCard key={deal.id} deal={deal} onDecision={handleDecision} onCounter={openCounterModal} />
             ))}
             {resolved.length > 0 && (
               <>
                 {pending.length > 0 && <div className="border-t border-slate-700 my-2" />}
                 <p className="text-xs text-gray-500 font-medium px-1">{t('deals.history')}</p>
                 {resolved.map(deal => (
-                  <DealCard key={deal.id} deal={deal} onDecision={handleDecision} />
+                  <DealCard key={deal.id} deal={deal} onDecision={handleDecision} onCounter={openCounterModal} />
                 ))}
               </>
             )}
           </>
         )}
       </div>
+
+      {/* Counter Offer Modal */}
+      {counterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setCounterModal(null)}>
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 w-80 shadow-2xl shadow-black/50 animate-bounceIn" onClick={e => e.stopPropagation()}>
+            <h3 className="text-white font-bold text-base mb-1 flex items-center gap-2">
+              <RefreshCw size={16} className="text-emerald-400" />
+              הצעה נגדית
+            </h3>
+            <p className="text-gray-400 text-xs mb-4">
+              הקונה הציע ₪{counterModal.agreedPrice.toLocaleString()} — הכנס את הצעתך
+            </p>
+
+            <label className="text-xs text-gray-400 block mb-1">מחיר מוצע (₪)</label>
+            <input
+              type="number"
+              value={counterPrice}
+              onChange={e => setCounterPrice(e.target.value)}
+              min={counterModal.agreedPrice}
+              max={counterModal.listingPrice}
+              className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-emerald-500 mb-3"
+              autoFocus
+            />
+
+            <label className="text-xs text-gray-400 block mb-1">הודעה לקונה (אופציונלי)</label>
+            <textarea
+              value={counterMsg}
+              onChange={e => setCounterMsg(e.target.value)}
+              placeholder="למשל: זה המינימום שלי, המוצר במצב מושלם..."
+              rows={2}
+              className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-emerald-500 resize-none mb-4 placeholder-gray-500"
+            />
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCounterModal(null)}
+                className="flex-1 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-gray-300 text-sm font-medium transition-all"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={submitCounter}
+                disabled={counterSaving || !counterPrice}
+                className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-sm font-bold transition-all flex items-center justify-center gap-1.5"
+              >
+                <RefreshCw size={13} />
+                {counterSaving ? 'שולח...' : 'שלח'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function DealCard({ deal, onDecision }) {
+function DealCard({ deal, onDecision, onCounter }) {
   const { t, lang } = useLanguage();
-  const isPending  = deal.status === 'pending';
-  const isApproved = deal.status === 'approved';
+  const isPending   = deal.status === 'pending';
+  const isApproved  = deal.status === 'approved';
+  const isCountered = deal.status === 'countered';
   const savings    = deal.listingPrice - deal.agreedPrice;
   const savingsPct = Math.round(Math.abs(savings) / deal.listingPrice * 100);
 
   return (
     <div className={`border rounded-xl p-3 transition-all ${
-      isPending  ? 'border-amber-500/40 bg-amber-500/5' :
-      isApproved ? 'border-emerald-500/30 bg-emerald-500/5 opacity-80' :
-                   'border-red-500/30 bg-red-500/5 opacity-70'
+      isPending   ? 'border-amber-500/40 bg-amber-500/5' :
+      isApproved  ? 'border-emerald-500/30 bg-emerald-500/5 opacity-80' :
+      isCountered ? 'border-emerald-500/40 bg-emerald-500/5' :
+                    'border-red-500/30 bg-red-500/5 opacity-70'
     }`}>
       {/* Buyer + time */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-600 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
             {deal.buyerName?.[0]?.toUpperCase() || '?'}
           </div>
           <div>
@@ -119,6 +196,11 @@ function DealCard({ deal, onDecision }) {
           <span className="flex items-center gap-1 text-emerald-400 text-xs font-medium">
             <CheckCircle size={11} />
             {t('deals.approved')}
+          </span>
+        ) : isCountered ? (
+          <span className="flex items-center gap-1 text-emerald-400 text-xs font-medium">
+            <RefreshCw size={11} />
+            הצעה נגדית נשלחה
           </span>
         ) : (
           <span className="flex items-center gap-1 text-red-400 text-xs font-medium">
@@ -143,21 +225,38 @@ function DealCard({ deal, onDecision }) {
 
       {/* Action buttons (only for pending) */}
       {isPending && (
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <button
             onClick={() => onDecision(deal.id, 'approved')}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 transition-all"
           >
-            <CheckCircle size={13} />
+            <CheckCircle size={12} />
             {t('deals.approve')}
           </button>
           <button
-            onClick={() => onDecision(deal.id, 'rejected')}
-            className="flex-1 bg-red-600/80 hover:bg-red-600 active:scale-95 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"
+            onClick={() => onCounter(deal)}
+            className="flex-1 bg-violet-600 hover:bg-violet-500 active:scale-95 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 transition-all"
           >
-            <XCircle size={13} />
+            <RefreshCw size={12} />
+            נגדי
+          </button>
+          <button
+            onClick={() => onDecision(deal.id, 'rejected')}
+            className="flex-1 bg-red-600/80 hover:bg-red-600 active:scale-95 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 transition-all"
+          >
+            <XCircle size={12} />
             {t('deals.reject')}
           </button>
+        </div>
+      )}
+
+      {/* Show counter details if countered */}
+      {isCountered && deal.counterPrice && (
+        <div className="mt-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2 text-xs">
+          <span className="text-emerald-400 font-bold">הצעתך: ₪{deal.counterPrice.toLocaleString()}</span>
+          {deal.counterMessage && (
+            <p className="text-gray-400 mt-0.5">{deal.counterMessage}</p>
+          )}
         </div>
       )}
     </div>

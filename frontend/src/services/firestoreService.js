@@ -216,6 +216,15 @@ export const updateDeal = async (id, status) => {
   });
 };
 
+export const counterDeal = async (id, counterPrice, counterMessage) => {
+  await updateDoc(doc(db, 'deals', id), {
+    status: 'countered',
+    counterPrice: Number(counterPrice),
+    counterMessage: counterMessage || null,
+    updatedAt: serverTimestamp(),
+  });
+};
+
 /**
  * Real-time listener for a single deal (buyer waiting for decision).
  * sellerContact is returned only if status === 'approved'.

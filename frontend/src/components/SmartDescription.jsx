@@ -45,7 +45,7 @@ export default function SmartDescription({ title, category, onDescriptionGenerat
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 shadow-md shadow-purple-500/20 text-sm"
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 shadow-md shadow-purple-500/20 text-sm"
       >
         <Zap size={16} />
         יצור תיאור עם AI
@@ -57,7 +57,7 @@ export default function SmartDescription({ title, category, onDescriptionGenerat
           <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl shadow-black/50 animate-slideUp overflow-hidden">
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 bg-gradient-to-r from-purple-600/10 to-blue-600/10">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 bg-gradient-to-r from-purple-600/10 to-emerald-600/10">
               <div className="flex items-center gap-2">
                 <Sparkles size={18} className="text-purple-400" />
                 <h3 className="font-bold text-white">יצרן תיאור AI</h3>
@@ -112,7 +112,7 @@ export default function SmartDescription({ title, category, onDescriptionGenerat
                     type="button"
                     onClick={handleGenerate}
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 shadow-md"
+                    className="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 shadow-md"
                   >
                     {loading ? (
                       <>
@@ -145,7 +145,7 @@ export default function SmartDescription({ title, category, onDescriptionGenerat
                       className={`flex-1 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 text-sm
                         ${copied
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/20'}`}
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20'}`}
                     >
                       {copied ? <><Check size={16} /> הועתק!</> : <><Copy size={16} /> השתמש בתיאור</>}
                     </button>

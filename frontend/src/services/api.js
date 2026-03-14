@@ -13,6 +13,7 @@ export const aiAPI = {
   generateDescription: (data) => api.post('/ai/generate-description', data),
   analyzePrice:        (data) => api.post('/ai/analyze-price', data),
   getRecommendations:  (data) => api.post('/ai/recommendations', data),
+  post:                (path, data) => api.post(path, data),
 };
 
 // ── Listings API (MongoDB via Express) ──────────────────────────────────────

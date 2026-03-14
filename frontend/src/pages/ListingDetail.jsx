@@ -8,12 +8,14 @@ import ListingCard from '../components/ListingCard';
 import { listingsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
+import { useViewHistory } from '../hooks/useViewHistory';
 import { rateListing, getUserRating } from '../services/firestoreService';
 
 export default function ListingDetail() {
   const { id } = useParams();
   const { isLoggedIn, user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { addToHistory } = useViewHistory();
   const [listing, setListing]           = useState(null);
   const [loading, setLoading]           = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -32,6 +34,7 @@ export default function ListingDetail() {
         setListing(data);
         // Increment view count fire-and-forget
         listingsAPI.incrementViews(id).catch(() => {});
+        addToHistory(data);
         // Load existing rating info
         setRatingAvg(data.rating || null);
         setRatingCount(data.ratingCount || 0);
@@ -175,7 +178,7 @@ export default function ListingDetail() {
                 <div className="flex-1 ml-4">
                   <h1 className="text-2xl font-bold text-white mb-3 leading-snug">{listing.title}</h1>
                   <div className="flex flex-wrap gap-2">
-                    <span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 px-3 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-sm font-medium">
                       {listing.category}
                     </span>
                     <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full text-sm font-medium">
@@ -217,7 +220,7 @@ export default function ListingDetail() {
 
               {/* Price */}
               <div className="mb-5">
-                <div className="text-4xl font-extrabold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <div className="text-4xl font-extrabold text-emerald-400">
                   {listing.price === 0 ? 'חינם!' : `₪${listing.price.toLocaleString()}`}
                 </div>
               </div>
@@ -292,11 +295,11 @@ export default function ListingDetail() {
               {/* Meta */}
               <div className="flex gap-6 border-t border-slate-700 pt-4 text-sm text-gray-400">
                 <div className="flex items-center gap-1.5">
-                  <MapPin size={15} className="text-blue-400" />
+                  <MapPin size={15} className="text-emerald-400" />
                   <span>{listing.location}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Eye size={15} className="text-purple-400" />
+                  <Eye size={15} className="text-gray-500" />
                   <span>{listing.views?.toLocaleString()} צפיות</span>
                 </div>
               </div>
@@ -314,7 +317,7 @@ export default function ListingDetail() {
             {similarListings.length > 0 && (
               <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-5">
-                  <div className="w-1 h-5 bg-gradient-to-b from-purple-500 to-blue-500 rounded-full" />
+                  <div className="w-1 h-5 bg-gradient-to-b from-emerald-500 to-emerald-700 rounded-full" />
                   <h3 className="font-bold text-white">מודעות דומות</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -358,7 +361,7 @@ export default function ListingDetail() {
                     <img
                       src={listing.seller.image}
                       alt={listing.seller.name}
-                      className="w-12 h-12 rounded-full ring-2 ring-blue-500/40"
+                      className="w-12 h-12 rounded-full ring-2 ring-emerald-500/40"
                     />
                     <div>
                       <p className="font-bold text-white">{listing.seller.name}</p>

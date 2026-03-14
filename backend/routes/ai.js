@@ -930,6 +930,42 @@ router.post('/analyze-price', async (req, res) => {
   }
 });
 
+// ── User Insight — AI מנתח היסטוריה ומחזיר הצעה אישית ───────────────────────
+router.post('/user-insight', async (req, res) => {
+  try {
+    const { history = [], favorites = [], userName = '' } = req.body;
+
+    const allItems = [...favorites.map(f => ({ ...f, w: 2 })), ...history.map(h => ({ ...h, w: 1 }))];
+    const catCount = {};
+    allItems.forEach(item => {
+      if (item.category) catCount[item.category] = (catCount[item.category] || 0) + (item.w || 1);
+    });
+
+    const sorted = Object.entries(catCount).sort((a, b) => b[1] - a[1]);
+    const topCat  = sorted[0]?.[0] || null;
+    const total   = history.length + favorites.length;
+
+    const catLabels = {
+      electronics: 'אלקטרוניקה', vehicles: 'רכבים', real_estate: 'נדל"ן',
+      furniture: 'ריהוט', clothing: 'ביגוד', sports: 'ספורט', pets: 'חיות מחמד', services: 'שירותים',
+    };
+
+    let message = '';
+    if (!topCat || total === 0) {
+      message = `שלום${userName ? ' ' + userName : ''}! 👋 כרגע עדיין לא ידוע לי על ההעדפות שלך — התחל לדפדף ולשמור מועדפים ואני אכיר אותך טוב יותר.`;
+    } else if (favorites.length > 0) {
+      message = `${userName ? userName + ', ה' : 'ה'}ניתוח שלי מראה שאתה מתעניין בעיקר ב${catLabels[topCat] || topCat}. שמרת ${favorites.length} מועדפים וצפית ב-${history.length} מוצרים — ריכזתי עבורך את הכי רלוונטיים! 🎯`;
+    } else {
+      message = `על בסיס ${history.length} המוצרים שצפית בהם, נראה שמתעניין בתחום ה${catLabels[topCat] || topCat}. הנה כמה מוצרים שעשויים להתאים לך 👇`;
+    }
+
+    res.json({ message, topCategory: topCat, totalSignals: total });
+  } catch (err) {
+    console.error('user-insight error:', err);
+    res.status(500).json({ error: 'שגיאה' });
+  }
+});
+
 // AI Recommendations
 router.post('/recommendations', async (req, res) => {
   try {

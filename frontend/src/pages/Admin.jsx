@@ -114,7 +114,7 @@ export default function Admin() {
         {/* Stats cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
-            { key: 'admin.stat.users',  value: users.length,           icon: <Users size={18} />,       color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/30' },
+            { key: 'admin.stat.users',  value: users.length,           icon: <Users size={18} />,       color: 'text-emerald-400',   bg: 'bg-emerald-500/10 border-emerald-500/30' },
             { key: 'admin.stat.active', value: activeListings.length,  icon: <List size={18} />,        color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
             { key: 'admin.stat.hidden', value: inactiveListings.length,icon: <EyeOff size={18} />,      color: 'text-amber-400',  bg: 'bg-amber-500/10 border-amber-500/30' },
             { key: 'admin.stat.admins', value: adminUsers.length,       icon: <Shield size={18} />,      color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/30' },
