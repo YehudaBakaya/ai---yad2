@@ -22,6 +22,7 @@ export function useRecommendations() {
   const [mode, setMode]                       = useState('popular');
 
   useEffect(() => {
+    if (!user) { setLoading(false); setRecommendations([]); return; }
     setLoading(true);
 
     const history = getHistory(); // [{id, category, ...}]

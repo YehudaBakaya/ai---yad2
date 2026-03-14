@@ -148,7 +148,7 @@ export default function Home() {
       </section>
 
       {/* ===== RECOMMENDATIONS ===== */}
-      {(recLoading || recommendations.length > 0) && (
+      {user && (recLoading || recommendations.length > 0) && (
         <section className="max-w-6xl mx-auto px-4 py-10 border-t border-slate-800">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">

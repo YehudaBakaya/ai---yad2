@@ -39,6 +39,7 @@ export default function RecommendationsWidget() {
       .finally(() => setInsightLoading(false));
   }, [open]); // eslint-disable-line
 
+  if (!user) return null;
   const visible = loading || recommendations.length > 0;
   if (!visible) return null;
 
