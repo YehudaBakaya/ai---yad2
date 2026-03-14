@@ -19,12 +19,15 @@ const LOWEST_WORDS   = ['הכי נמוך', 'מינימום', 'תחתית', 'אי
 const URGENT_WORDS   = ['היום', 'עכשיו', 'מזומן', 'cash', 'מיד', 'תוך שעה'];
 const MIDPOINT_WORDS = ['נפגש באמצע', 'חצי חצי', 'ספליט', 'split', 'meet in the middle', 'פגישה באמצע'];
 const PRODUCT_WORDS  = ['מצב', 'אחריות', 'כמה זמן', 'כמה שנים', 'בשימוש', 'כלול', 'מה כלול', 'תמונות', 'בדיקה', 'היסטוריה', 'פגמים', 'שריטות', 'ספר לי', 'ספרי', 'מידע', 'פרטים', 'למה מוכר', 'מדוע מוכר', 'קנית', 'מתי קנית', 'גיל', 'ישן', 'חדש'];
+const PRICE_WORDS    = ['מחיר', 'הנחה', 'להוריד', 'מוריד', 'יקר', 'זול', 'offer', 'הצעה', 'גמישות', 'לסגור', 'לקחת', 'לקנות', 'אשלם', 'אני מציע', 'כמה עולה', 'כמה שקל', 'כמה ₪'];
 
-const detectAcceptance    = (msg) => ACCEPT_WORDS.some(w => msg.includes(w));
-const detectLowest        = (msg) => LOWEST_WORDS.some(w => msg.includes(w));
-const detectUrgent        = (msg) => URGENT_WORDS.some(w => msg.includes(w));
-const detectMidpoint      = (msg) => MIDPOINT_WORDS.some(w => msg.includes(w));
+const detectAcceptance      = (msg) => ACCEPT_WORDS.some(w => msg.includes(w));
+const detectLowest          = (msg) => LOWEST_WORDS.some(w => msg.includes(w));
+const detectUrgent          = (msg) => URGENT_WORDS.some(w => msg.includes(w));
+const detectMidpoint        = (msg) => MIDPOINT_WORDS.some(w => msg.includes(w));
 const detectProductQuestion = (msg) => PRODUCT_WORDS.some(w => msg.includes(w));
+// buyer mentioned price/discount OR gave a specific number
+const detectPriceIntent     = (msg) => PRICE_WORDS.some(w => msg.includes(w)) || extractAmount(msg) !== null;
 
 // Extract number from message
 const extractAmount = (msg) => {
@@ -108,17 +111,15 @@ const getAIMockResponse = (message, role, listingPrice, history, sellerNotes = n
   // ── Seller role (AI represents seller) ────────────────────────────────────
   if (role === 'seller') {
 
-    // ── Round 0: Opening statement ──────────────────────────────────────────
+    // ── Round 0: Opening statement — present product, invite questions ────────
     if (round === 0) {
-      const firstOffer = clamp(lp * 0.97);
-      const urgencyBonus = isUrgent ? ` מכיוון שאתה מוכן לסגור היום, אני יכול להציע ₪${clamp(lp * 0.95).toLocaleString()}.` : '';
       return {
         message: pick([
-          `שלום וברוך הבא! שמח שהתעניינת. 😊\n\nהמוצר במצב ${sellerNotes?.condition || 'מצוין'} ואני מקבל פניות עליו ברציפות. המחיר ₪${lp.toLocaleString()} משקף את האיכות האמיתית שלו.${urgencyBonus}\n\nמה בראשך?`,
-          `תודה על ההתעניינות! 🙏\n\nאני מוכר ישר ומקצועי — המחיר ₪${lp.toLocaleString()} הוא מחיר שוק ריאלי. יש לי מספר מתעניינים, אבל אשמח לסגור עם מי שרציני.\n\nמה ההצעה שלך?`,
-          `היי! מעניין לשמוע. 👋\n\nהמוצר שלי הושקע בו — ${sellerNotes?.reason ? `אני מוכר כי ${sellerNotes.reason}` : 'אני מוכר בגלל שינוי נסיבות'}. המחיר ₪${lp.toLocaleString()} סופי כמעט, אבל עם הצעה רצינית — נדבר.`,
+          `שלום וברוך הבא! שמח שהתעניינת. 😊\n\nהמוצר במצב ${sellerNotes?.condition || 'מצוין'}${sellerNotes?.reason ? ` — אני מוכר כי ${sellerNotes.reason}` : ''}.\n\nיש לך שאלות על המוצר? אשמח לענות על הכל לפני שנדון על מחיר.`,
+          `תודה על ההתעניינות! 🙏\n\nאני מוכר ישר ושקוף — שאל כל שאלה על המוצר, המצב, מה כלול. אחרי שתהיה לך תמונה מלאה — נדון על מחיר.`,
+          `היי! שמח שהגעת. 👋\n\nהמוצר במצב ${sellerNotes?.condition || 'מצוין'}${sellerNotes?.reason ? `, מוכר כי ${sellerNotes.reason}` : ''}.\n\nמה היית רוצה לדעת עליו?`,
         ]),
-        currentOffer: firstOffer,
+        currentOffer: lp, // price is asking price — no concession until buyer negotiates
         confidence: 0.82,
         suggestedReplies: ['מה מצב המוצר?', 'כמה זמן בשימוש?', 'מה כלול במחיר?'],
       };
@@ -257,33 +258,47 @@ const getAIMockResponse = (message, role, listingPrice, history, sellerNotes = n
         `שמח שאתה שואל — זה מראה שאתה קונה רציני. 👍\n\n**מצב:** ${conditionDesc}\n**אחריות:** ${sellerNotes?.warranty || 'אין אחריות יצרן פעילה — אבל המוצר עצמו בסדר מושלם'}.\n**כלול:** כל האביזרים המקוריים.\n\nמה עוד רצית לדעת?`,
       ];
 
-      // Remaining product questions (minus the one just asked)
+      // Remaining product questions (minus the one just asked) — no price push
       const allProductReplies = ['מה מצב המוצר?', 'כמה זמן בשימוש?', 'האם יש אחריות?', 'מה כלול במחיר?', 'למה אתה מוכר?'];
       const remainingQ = allProductReplies.filter(q => !msg.includes(q.replace('?', '').toLowerCase().slice(0, 8)));
-      const followUps  = remainingQ.slice(0, 2);
-      followUps.push(`אני מציע ₪${cleanPrice(lp * 0.88).toLocaleString()}`);
+      const followUps  = remainingQ.slice(0, 3);
 
       return {
         message: pick(answers),
-        currentOffer: lastAIOffer,
+        currentOffer: lastAIOffer, // don't move price — buyer hasn't asked
         confidence: 0.82,
         suggestedReplies: followUps,
       };
     }
 
     // ── No specific amount, general message ────────────────────────────────
-    // Make a small additional concession from the last AI offer
+    // Only start price negotiation if buyer actually expressed price intent
+    if (!detectPriceIntent(msg)) {
+      // Buyer is just chatting — answer naturally, don't volunteer a lower price
+      return {
+        message: pick([
+          `שמח שהתעניינת! 😊\n\nאם יש לך שאלות על המוצר — אשמח לענות על הכל. וכשאתה מוכן, תציע לי מחיר.`,
+          `ברוך הבא! 🙏\n\nיש לך שאלות על המוצר? על המצב, האחריות, מה כלול? אני כאן. כשתרגיש בנוח — תגיד לי מה בראשך.`,
+          `כיף שאתה שואל! 👋\n\nאני מוכר ישר ושקוף — שאל כל שאלה על המוצר. כשתסיים לשמוע הכל, נדון על המחיר.`,
+        ]),
+        currentOffer: lastAIOffer, // price stays put — buyer hasn't negotiated
+        confidence: 0.80,
+        suggestedReplies: ['מה מצב המוצר?', 'כמה זמן בשימוש?', 'מה כלול במחיר?'],
+      };
+    }
+
+    // Buyer expressed price intent but no specific number — make a soft counter
     const smallDrop = cleanPrice(lp * 0.02);
     const counter   = clamp(lastAIOffer - smallDrop);
     if (round <= 2) {
       return {
         message: pick([
-          `אני שמח לנהל משא ומתן, אבל תן לי קודם להסביר למה המחיר הוגן. 🧐\n\nהמוצר הזה במצב ${sellerNotes?.condition || 'מצוין'}, כולל את כל האביזרים, ומחירי השוק מאשרים שאנחנו בטווח הנכון. ₪${counter.toLocaleString()} — מה אתה מציע?`,
-          `נשמח לדבר על מחיר. 😊\n\nאבל לפני, חשוב לי שתדע: ${sellerNotes?.reason ? `אני מוכר כי ${sellerNotes.reason}` : 'אני מוכר כי אני קונה משהו חדש'}, לא מכורח. ₪${counter.toLocaleString()} זה מחיר שמכבד את שני הצדדים.\n\nמה ההצעה שלך?`,
+          `אני שמח לדבר על מחיר. 🧐\n\nהמוצר במצב ${sellerNotes?.condition || 'מצוין'}, כולל את כל האביזרים, ומחירי השוק מאשרים שאנחנו בטווח הנכון. ₪${counter.toLocaleString()} — מה אתה מציע?`,
+          `נשמח לדון על מחיר. 😊\n\n${sellerNotes?.reason ? `אני מוכר כי ${sellerNotes.reason}` : 'אני מוכר כי אני קונה משהו חדש'}, לא מכורח. ₪${counter.toLocaleString()} זה מחיר שמכבד את שני הצדדים — מה ההצעה שלך?`,
         ]),
         currentOffer: counter,
         confidence: 0.82,
-        suggestedReplies: [`₪${cleanPrice(lp * 0.85).toLocaleString()}`, `₪${cleanPrice(lp * 0.88).toLocaleString()}`, 'יש גמישות?'],
+        suggestedReplies: [`אני מציע ₪${cleanPrice(lp * 0.85).toLocaleString()}`, `אני מציע ₪${cleanPrice(lp * 0.88).toLocaleString()}`, 'יש גמישות?'],
       };
     }
 
