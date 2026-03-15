@@ -41,7 +41,7 @@ export default function Register() {
         email: form.email.toLowerCase(),
         phone: form.phone.trim() || null,
       });
-      await syncUser();
+      await syncUser(cred.user, form.phone.trim() || null);
       navigate('/');
     } catch (err) {
       const msg = err.code === 'auth/email-already-in-use'

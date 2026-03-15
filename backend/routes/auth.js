@@ -141,7 +141,7 @@ router.get('/me', verifyToken, async (req, res) => {
 // Called from frontend after Firebase sign-in to sync user into MongoDB
 router.post('/firebase-sync', async (req, res) => {
   try {
-    const { uid, name, email, avatar, phone } = req.body;
+    const { uid, name, email, avatar, phone, provider } = req.body;
     if (!uid || !email)
       return res.status(400).json({ error: 'uid ו-email נדרשים' });
 
@@ -159,7 +159,7 @@ router.post('/firebase-sync', async (req, res) => {
             email: email.toLowerCase(),
             avatar: avatar || null,
             phone: phone || null,
-            provider: 'google',
+            provider: provider || 'local',
           });
         }
       } else {
@@ -175,7 +175,7 @@ router.post('/firebase-sync', async (req, res) => {
     // in-memory fallback
     let u = inMemory.find(u => u.firebaseUid === uid || u.email === email.toLowerCase());
     if (!u) {
-      u = { id: uid, firebaseUid: uid, name: name || email.split('@')[0], email: email.toLowerCase(), avatar: avatar || null, phone: phone || null, provider: 'google' };
+      u = { id: uid, firebaseUid: uid, name: name || email.split('@')[0], email: email.toLowerCase(), avatar: avatar || null, phone: phone || null, provider: provider || 'local' };
       inMemory.push(u);
     }
     res.json({ user: safeUser(u) });

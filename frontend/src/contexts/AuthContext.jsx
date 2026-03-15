@@ -10,12 +10,14 @@ const AuthContext = createContext(null);
 const syncToMongo = async (firebaseUser, phone = null) => {
   if (!firebaseUser) return null;
   try {
+    const isGoogle = firebaseUser.providerData?.[0]?.providerId === 'google.com';
     const { data } = await authAPI.firebaseSync({
-      uid:    firebaseUser.uid,
-      name:   firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
-      email:  firebaseUser.email,
-      avatar: firebaseUser.photoURL || null,
-      phone:  phone || null,
+      uid:      firebaseUser.uid,
+      name:     firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'משתמש',
+      email:    firebaseUser.email,
+      avatar:   firebaseUser.photoURL || null,
+      phone:    phone || null,
+      provider: isGoogle ? 'google' : 'local',
     });
     return data.user || null;
   } catch {
@@ -62,12 +64,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Called directly after sign-in/register with the Firebase user object
-  const syncUser = useCallback(async (firebaseUser) => {
+  const syncUser = useCallback(async (firebaseUser, phone = null) => {
     const u = firebaseUser || auth.currentUser;
     if (!u) return;
     const [profile, mongoUser] = await Promise.all([
       getUserProfile(u.uid).catch(() => null),
-      syncToMongo(u),
+      syncToMongo(u, phone),
     ]);
     const userData = {
       id:      u.uid,
