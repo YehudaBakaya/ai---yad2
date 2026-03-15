@@ -44,9 +44,14 @@ export default function Register() {
       await syncUser(cred.user, form.phone.trim() || null);
       navigate('/');
     } catch (err) {
-      const msg = err.code === 'auth/email-already-in-use'
-        ? t('reg.errEmailInUse')
-        : t('reg.errGeneral');
+      const firebaseErrors = {
+        'auth/email-already-in-use':    t('reg.errEmailInUse'),
+        'auth/weak-password':           'הסיסמה חלשה מדי (מינימום 6 תווים)',
+        'auth/invalid-email':           'כתובת אימייל לא תקינה',
+        'auth/operation-not-allowed':   'הרשמה באימייל לא מופעלת — יש להפעיל ב-Firebase Console',
+        'auth/too-many-requests':       'יותר מדי ניסיונות, נסה שוב מאוחר יותר',
+      };
+      const msg = firebaseErrors[err.code] || `${t('reg.errGeneral')} (${err.code || err.message})`;
       setErrors({ submit: msg });
     } finally {
       setLoading(false);
