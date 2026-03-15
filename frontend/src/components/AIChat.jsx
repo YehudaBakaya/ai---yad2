@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, CheckCircle, XCircle, TrendingDown, Clock, Loader2, Phone } from 'lucide-react';
+import { Send, Bot, User, Sparkles, CheckCircle, XCircle, TrendingDown, Clock, Loader2, Phone, X, RefreshCw } from 'lucide-react';
 import { aiAPI } from '../services/api';
 import api from '../services/api';
 import { createDeal, subscribeToDeal } from '../services/firestoreService';
@@ -47,32 +47,34 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
 
   // Revealed contact after approval
   const [revealedContact, setRevealedContact] = useState(null);
+  const [approvalPopup, setApprovalPopup]     = useState(false);
+  const [counterAlert, setCounterAlert]       = useState(false);
 
   // Real-time listener for seller decision (Firestore onSnapshot)
   useEffect(() => {
     if (!dealId) return;
     const unsubscribe = subscribeToDeal(dealId, (deal) => {
-      if (deal.status !== 'pending') {
-        setDealStatus(deal.status);
-        if (deal.status === 'approved' && deal.sellerContact) {
-          setRevealedContact(deal.sellerContact);
-        }
-        if (deal.status === 'countered' && deal.counterPrice) {
-          // Inject counter offer as AI message in chat
-          const counterMsg = {
-            id: Date.now(),
-            text: `🔄 המוכר שלח הצעה נגדית!\n\nהמוכר מציע לך את המוצר ב־₪${deal.counterPrice.toLocaleString()}${deal.counterMessage ? `\n\n"${deal.counterMessage}"` : ''}\n\nהאם תקבל את ההצעה?`,
-            sender: 'ai',
-            timestamp: new Date(),
-            counterOffer: deal.counterPrice,
-          };
-          setMessages(prev => [...prev, counterMsg]);
-          setCurrentOffer(deal.counterPrice);
-          setDealReached(false);
-          setDealStatus(null); // back to chat mode
-          setDealId(null);
-          setSuggestedReplies(['מסכים!', `אני מציע ₪${Math.round(deal.counterPrice * 0.95).toLocaleString()}`, 'לא מסכים, נשאר בהצעה שלי']);
-        }
+      if (deal.status === 'approved') {
+        setDealStatus('approved');
+        if (deal.sellerContact) setRevealedContact(deal.sellerContact);
+        setApprovalPopup(true); // show popup
+      } else if (deal.status === 'rejected') {
+        setDealStatus('rejected');
+      } else if (deal.status === 'countered' && deal.counterPrice) {
+        const counterMsg = {
+          id: Date.now(),
+          text: `🔄 המוכר שלח הצעה נגדית!\n\nהמוכר מציע לך את המוצר ב־₪${deal.counterPrice.toLocaleString()}${deal.counterMessage ? `\n\n"${deal.counterMessage}"` : ''}\n\nהאם תקבל את ההצעה?`,
+          sender: 'ai',
+          timestamp: new Date(),
+          counterOffer: deal.counterPrice,
+        };
+        setMessages(prev => [...prev, counterMsg]);
+        setCurrentOffer(deal.counterPrice);
+        setDealReached(false);
+        setDealStatus(null);
+        setDealId(null);
+        setCounterAlert(true);
+        setSuggestedReplies(['מסכים!', `אני מציע ₪${Math.round(deal.counterPrice * 0.95).toLocaleString()}`, 'לא מסכים, נשאר בהצעה שלי']);
       }
     });
     return unsubscribe;
@@ -163,35 +165,44 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
   const savingsPct = Math.round(Math.abs(savings) / listingPrice * 100);
   const meterPct   = Math.min(100, Math.max(0, savingsPct * 3));
 
-  /* ── APPROVED ── */
-  if (dealStatus === 'approved') {
-    const contact = revealedContact || sellerContact;
-    return (
-      <div className="bg-slate-800 border border-emerald-500/50 rounded-xl p-6 animate-bounceIn shadow-xl shadow-black/30 space-y-4">
+  const contact = revealedContact || sellerContact;
+
+  /* ── APPROVAL POPUP ── */
+  const ApprovalPopup = approvalPopup && (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn" onClick={() => setApprovalPopup(false)}>
+      <div className="bg-slate-800 border border-emerald-500/60 rounded-2xl p-6 w-[340px] shadow-2xl shadow-emerald-500/20 animate-bounceIn space-y-4" onClick={e => e.stopPropagation()}>
+        {/* Close */}
+        <button onClick={() => setApprovalPopup(false)} className="absolute top-3 left-3 text-gray-500 hover:text-white transition-colors">
+          <X size={16} />
+        </button>
+
+        {/* Icon + title */}
         <div className="text-center">
-          <div className="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto mb-3">
-            <CheckCircle size={28} className="text-emerald-400" />
+          <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-emerald-500/20">
+            <CheckCircle size={32} className="text-emerald-400" />
           </div>
           <h3 className="text-xl font-extrabold text-white mb-1">🎉 המוכר אישר!</h3>
-          <p className="text-gray-400 text-sm">העסקה אושרה — כל הכבוד!</p>
+          <p className="text-gray-400 text-sm">העסקה אושרה בהצלחה</p>
         </div>
 
+        {/* Price */}
         <div className="bg-slate-700/60 border border-emerald-500/30 rounded-xl px-5 py-3 text-center">
           <div className="text-xs text-gray-400 mb-1">מחיר סגירה מאושר</div>
           <div className="text-3xl font-extrabold text-emerald-400">₪{currentOffer.toLocaleString()}</div>
           <div className="text-xs text-emerald-400 mt-1 font-medium">
-            חסכת ₪{Math.abs(savings).toLocaleString()} ({savingsPct}% מהמחיר המקורי)
+            חסכת ₪{Math.abs(savings).toLocaleString()} ({savingsPct}%)
           </div>
         </div>
 
-        {/* Seller contact — revealed now */}
+        {/* Seller contact */}
         {contact ? (
           <div className="bg-slate-700/60 border border-slate-600 rounded-xl p-4">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">פרטי המוכר</p>
             <div className="flex items-center gap-3 mb-3">
-              {contact.image && (
-                <img src={contact.image} alt={contact.name} className="w-10 h-10 rounded-full ring-2 ring-emerald-500/40" />
-              )}
+              {contact.image
+                ? <img src={contact.image} alt={contact.name} className="w-10 h-10 rounded-full ring-2 ring-emerald-500/40" />
+                : <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-purple-600 flex items-center justify-center text-white font-bold">{contact.name?.[0]}</div>
+              }
               <div>
                 <p className="font-bold text-white">{contact.name}</p>
                 <p className="text-xs text-gray-400">✅ מוכר מאומת</p>
@@ -210,9 +221,24 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
         ) : (
           <p className="text-gray-400 text-xs text-center">צרו קשר ישיר עם המוכר לתיאום מסירה</p>
         )}
+
+        <button onClick={() => setApprovalPopup(false)} className="w-full py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-gray-300 text-sm font-medium transition-all">
+          סגור
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+
+  /* ── COUNTER ALERT BANNER ── */
+  const CounterBanner = counterAlert && (
+    <div className="mx-3 mb-2 flex items-center gap-2 bg-violet-500/15 border border-violet-500/40 rounded-xl px-3 py-2 animate-fadeIn">
+      <RefreshCw size={13} className="text-violet-400 shrink-0" />
+      <p className="text-xs text-violet-300 flex-1">המוכר שלח הצעה נגדית — בדוק את הצ'אט</p>
+      <button onClick={() => setCounterAlert(false)} className="text-gray-500 hover:text-white">
+        <X size={12} />
+      </button>
+    </div>
+  );
 
   /* ── REJECTED ── */
   if (dealStatus === 'rejected') {
@@ -243,6 +269,8 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
   /* ── WAITING FOR SELLER ── */
   if (dealStatus === 'pending') {
     return (
+      <>
+      {ApprovalPopup}
       <div className="bg-slate-800 border border-amber-500/40 rounded-xl p-6 text-center animate-fadeIn shadow-xl shadow-black/30">
         <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500/60 flex items-center justify-center mx-auto mb-4">
           <Clock size={28} className="text-amber-400 animate-pulse" />
@@ -258,6 +286,7 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
           <span>בודק תשובה...</span>
         </div>
       </div>
+      </>
     );
   }
 
@@ -296,6 +325,7 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
   /* ── MAIN CHAT ── */
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden flex flex-col shadow-xl shadow-black/30">
+      {ApprovalPopup}
 
       {/* Header */}
       <div className="px-4 py-3 flex items-center justify-between border-b border-slate-700 bg-gradient-to-r from-purple-600/15 to-emerald-600/10">
@@ -334,6 +364,8 @@ export default function AIChat({ listingId, listingTitle, listingPrice, sellerCo
           )}
         </div>
       </div>
+
+      {CounterBanner}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-64 max-h-80">
