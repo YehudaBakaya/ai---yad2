@@ -18,12 +18,15 @@ const PORT = process.env.PORT || 3001;
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://127.0.0.1:5173',
-    process.env.FRONTEND_URL,
-  ].filter(Boolean),
+  origin: (origin, cb) => {
+    // Allow all localhost origins (any port) + configured FRONTEND_URL
+    const allowed = [process.env.FRONTEND_URL].filter(Boolean);
+    if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || allowed.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`CORS blocked: ${origin}`));
+    }
+  },
   credentials: true,
 }));
 

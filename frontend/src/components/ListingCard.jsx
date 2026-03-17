@@ -1,23 +1,32 @@
 import React, { useState } from 'react';
-import { Eye, MapPin, Calendar, Star, Heart } from 'lucide-react';
+import { Eye, MapPin, Star, Heart, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import { useLanguage } from '../contexts/LanguageContext';
+
+const CONDITION_COLOR = {
+  'חדש':        { bg: 'rgba(16,185,129,0.15)', text: '#34D399', border: 'rgba(16,185,129,0.3)' },
+  'מעולה':      { bg: 'rgba(139,92,246,0.15)', text: '#A78BFA', border: 'rgba(139,92,246,0.3)' },
+  'טוב':        { bg: 'rgba(56,189,248,0.15)',  text: '#7DD3FC', border: 'rgba(56,189,248,0.3)' },
+  'סביר':       { bg: 'rgba(245,158,11,0.15)',  text: '#FCD34D', border: 'rgba(245,158,11,0.3)' },
+  'דורש תיקון':{ bg: 'rgba(239,68,68,0.15)',   text: '#FCA5A5', border: 'rgba(239,68,68,0.3)'  },
+};
 
 export default function ListingCard({ listing }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { t, tCond, tCat, lang } = useLanguage();
   const saved = isFavorite(listing.id);
   const [heartAnim, setHeartAnim] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   const formatDate = (date) => {
     const d = date?.toDate ? date.toDate() : new Date(date);
     if (isNaN(d)) return '';
     const diff = Date.now() - d.getTime();
-    if (diff < 60000)    return t('card.justNow');
-    if (diff < 3600000)  return t('card.minsAgo',  { n: Math.floor(diff / 60000) });
-    if (diff < 86400000) return t('card.hoursAgo', { n: Math.floor(diff / 3600000) });
-    if (diff < 604800000)return t('card.daysAgo',  { n: Math.floor(diff / 86400000) });
+    if (diff < 60000)     return t('card.justNow');
+    if (diff < 3600000)   return t('card.minsAgo',  { n: Math.floor(diff / 60000) });
+    if (diff < 86400000)  return t('card.hoursAgo', { n: Math.floor(diff / 3600000) });
+    if (diff < 604800000) return t('card.daysAgo',  { n: Math.floor(diff / 86400000) });
     return d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US');
   };
 
@@ -28,87 +37,144 @@ export default function ListingCard({ listing }) {
     setTimeout(() => setHeartAnim(false), 300);
   };
 
-  const conditionColor = {
-    'חדש':         'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
-    'מעולה':       'bg-purple-500/20 text-purple-300 border border-purple-500/40',
-    'טוב':         'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
-    'סביר':        'bg-amber-500/20 text-amber-300 border border-amber-500/40',
-    'דורש תיקון': 'bg-red-500/20 text-red-300 border border-red-500/40',
-  };
-
+  const cond = CONDITION_COLOR[listing.condition];
   const categoryLabel = listing.categoryEn ? tCat(listing.categoryEn) : listing.category;
 
   return (
-    <Link to={`/listings/${listing.id}`}>
-      <div className="card-hover bg-slate-800 border border-slate-700 rounded-xl overflow-hidden cursor-pointer animate-fadeIn group">
+    <Link to={`/listings/${listing.id}`} className="block group">
+      <div className="card-hover rounded-2xl overflow-hidden animate-fadeIn">
 
-        {/* Image */}
-        <div className="relative h-44 bg-slate-700 overflow-hidden">
+        {/* ── Image ─────────────────────────── */}
+        <div className="relative overflow-hidden" style={{ height: '200px' }}>
+          {/* Skeleton while loading */}
+          {!imgLoaded && <div className="absolute inset-0 skeleton" />}
+
           <img
-            src={listing.images?.[0] || 'https://via.placeholder.com/300x200?text=No+Image'}
+            src={listing.images?.[0] || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600'}
             alt={listing.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            onLoad={() => setImgLoaded(true)}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            style={{ opacity: imgLoaded ? 1 : 0, transition: 'opacity 0.3s, transform 0.7s' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent group-hover:from-black/50 transition-all duration-300" />
 
-          {/* Category badge */}
-          <div className="absolute top-2 right-2 bg-gradient-to-r from-emerald-700/90 to-emerald-600/90 backdrop-blur text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg shadow-emerald-500/30">
-            {categoryLabel}
+          {/* Deep gradient overlay */}
+          <div className="absolute inset-0" style={{ background: 'var(--overlay-img)' }} />
+
+          {/* Top row: category + save */}
+          <div className="absolute top-3 right-3 left-3 flex items-start justify-between">
+            <div style={{
+              background: 'var(--overlay-badge)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(128,128,128,0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '11px',
+              fontWeight: '600',
+              padding: '4px 10px',
+              borderRadius: '10px',
+              letterSpacing: '0.02em',
+            }}>
+              {categoryLabel}
+            </div>
+
+            <button
+              onClick={toggleSave}
+              style={{
+                width: '32px', height: '32px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: '10px',
+                background: saved ? 'rgba(239,68,68,0.9)' : 'var(--overlay-badge)',
+                backdropFilter: 'blur(12px)',
+                border: `1px solid ${saved ? 'rgba(239,68,68,0.5)' : 'rgba(128,128,128,0.2)'}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              <Heart
+                size={14}
+                className={heartAnim ? 'animate-heartbeat' : ''}
+                style={{
+                  fill: saved ? 'white' : 'none',
+                  color: saved ? 'white' : 'var(--text-primary)',
+                }}
+              />
+            </button>
           </div>
 
-          {/* Save button */}
-          <button
-            onClick={toggleSave}
-            className="absolute top-2 left-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 backdrop-blur hover:bg-black/70 transition-all"
-          >
-            <Heart
-              size={16}
-              className={`transition-colors duration-200 ${heartAnim ? 'animate-heartbeat' : ''} ${saved ? 'fill-red-500 text-red-500' : 'text-white'}`}
-            />
-          </button>
-
-          {listing.price === 0 && (
-            <div className="absolute bottom-2 left-2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              {t('card.free')}
+          {/* Bottom: price */}
+          <div className="absolute bottom-3 right-3 left-3 flex items-end justify-between">
+            <div>
+              {listing.price === 0 ? (
+                <div style={{
+                  background: 'linear-gradient(135deg, #059669, #34D399)',
+                  color: 'white', fontSize: '13px', fontWeight: '800',
+                  padding: '4px 12px', borderRadius: '10px',
+                  boxShadow: '0 4px 16px rgba(16,185,129,0.4)',
+                }}>
+                  {t('card.free')}
+                </div>
+              ) : (
+                <div style={{ color: 'white', fontWeight: '800', fontSize: '22px', lineHeight: 1, textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
+                  ₪{listing.price?.toLocaleString()}
+                </div>
+              )}
             </div>
-          )}
+
+            {listing.rating && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                background: 'rgba(245,158,11,0.2)', backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(245,158,11,0.3)',
+                color: '#FCD34D', fontSize: '11px', fontWeight: '700',
+                padding: '4px 8px', borderRadius: '10px',
+              }}>
+                <Star size={10} fill="#FCD34D" />
+                {listing.rating}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-4">
-          <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-emerald-300 transition-colors duration-200">
+        {/* ── Content ───────────────────────── */}
+        <div className="p-4 pt-3.5">
+          <h3
+            className="font-bold mb-2.5 line-clamp-2 transition-colors duration-200 group-hover:text-emerald-400"
+            style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.4' }}
+          >
             {listing.title}
           </h3>
 
-          <div className="text-2xl font-extrabold mb-3 text-emerald-400">
-            {listing.price === 0 ? t('card.free') : `₪${listing.price?.toLocaleString()}`}
-          </div>
-
-          <div className="flex gap-2 mb-3 text-xs">
-            <span className={`px-2.5 py-1 rounded-full font-medium ${conditionColor[listing.condition] || 'bg-slate-700 text-gray-300'}`}>
+          {/* Condition pill */}
+          {cond && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center',
+              background: cond.bg, color: cond.text,
+              border: `1px solid ${cond.border}`,
+              fontSize: '11px', fontWeight: '600',
+              padding: '3px 10px', borderRadius: '8px', marginBottom: '12px',
+            }}>
               {tCond(listing.condition)}
-            </span>
-            {listing.rating && (
-              <span className="flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full font-medium">
-                <Star size={11} className="fill-amber-400 text-amber-400" />
-                {listing.rating}
-              </span>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1.5 text-xs text-gray-400 border-t border-slate-700/60 pt-3">
-            <div className="flex items-center gap-1.5">
-              <MapPin size={13} className="text-emerald-400 shrink-0" />
-              <span>{listing.location}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Calendar size={13} className="text-emerald-600 shrink-0" />
-                <span>{formatDate(listing.date)}</span>
+          )}
+
+          {/* Meta row */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            borderTop: '1px solid var(--border-dim)',
+            paddingTop: '10px', fontSize: '11px', color: 'var(--text-dim)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <MapPin size={11} color="#10B981" />
+              <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {listing.location}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                <Clock size={10} />
+                {formatDate(listing.date)}
               </div>
-              <div className="flex items-center gap-1 text-gray-500">
-                <Eye size={13} />
-                <span>{(listing.views || 0).toLocaleString()}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                <Eye size={10} />
+                {(listing.views || 0).toLocaleString()}
               </div>
             </div>
           </div>

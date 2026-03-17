@@ -21,9 +21,9 @@ export default function Register() {
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim())    e.name    = t('reg.errRequired');
-    if (!form.email)          e.email   = t('reg.errRequired');
-    if (form.password.length < 6) e.password = t('reg.errMinPw');
+    if (!form.name.trim())         e.name     = t('reg.errRequired');
+    if (!form.email)               e.email    = t('reg.errRequired');
+    if (form.password.length < 6)  e.password = t('reg.errMinPw');
     if (form.password !== form.confirm) e.confirm = t('reg.errMismatch');
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -73,90 +73,103 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md animate-fadeIn">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 py-10 relative overflow-hidden">
+      {/* Aurora background */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/6 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-violet-600/5 rounded-full blur-[80px] pointer-events-none" />
 
+      <div className="w-full max-w-md animate-fadeIn relative z-10">
+
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
-              <span className="text-white font-extrabold text-[10px] tracking-tight">S2B</span>
+          <Link to="/" className="inline-flex items-center gap-2.5 mb-4 group">
+            <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all group-hover:scale-105 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+              <span className="text-white font-extrabold text-[10px] tracking-tight relative z-10">S2B</span>
             </div>
-            <span className="text-2xl font-extrabold text-white">S<span className="text-emerald-400">2</span>B <span className="text-emerald-300">AI</span></span>
-          </div>
+            <span className="text-2xl font-extrabold text-white">
+              S<span className="text-emerald-400">2</span>B{' '}
+              <span className="text-gradient-emerald">AI</span>
+            </span>
+          </Link>
           <h1 className="text-xl font-bold text-white mb-1">{t('reg.title')}</h1>
-          <p className="text-gray-400 text-sm">{t('reg.sub')}</p>
+          <p className="text-gray-500 text-sm">{t('reg.sub')}</p>
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-7 shadow-xl shadow-black/30">
+        {/* Card */}
+        <div className="glass-medium rounded-3xl p-7 shadow-2xl shadow-black/50">
 
+          {/* Google button */}
           <button
             type="button"
             onClick={handleGoogle}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-all hover:scale-[1.02] active:scale-95 mb-5 shadow-sm disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-3 bg-white/95 hover:bg-white text-gray-800 font-semibold py-3 px-4 rounded-2xl transition-all hover:scale-[1.015] active:scale-[0.99] mb-5 shadow-lg shadow-black/20 disabled:opacity-60 text-sm"
           >
             <GoogleIcon />
             {t('reg.google')}
           </button>
 
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-slate-700" />
-            <span className="text-xs text-gray-500">{t('reg.orEmail')}</span>
-            <div className="flex-1 h-px bg-slate-700" />
+            <div className="flex-1 h-px bg-white/[0.06]" />
+            <span className="text-[11px] text-gray-600 font-medium">{t('reg.orEmail')}</span>
+            <div className="flex-1 h-px bg-white/[0.06]" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
 
-            <FormField label={t('reg.name')} error={errors.name}>
-              <div className="relative">
-                <User size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
-                  placeholder="Israel Israeli"
-                  className={inputCls(errors.name)} />
-              </div>
-            </FormField>
+            <InputField label={t('reg.name')} icon={<User size={15} />} type="text" value={form.name}
+              onChange={e => set('name', e.target.value)} placeholder="ישראל ישראלי" error={errors.name} />
 
-            <FormField label={t('login.email')} error={errors.email}>
-              <div className="relative">
-                <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
-                  placeholder="you@example.com"
-                  className={inputCls(errors.email)} />
-              </div>
-            </FormField>
+            <InputField label={t('login.email')} icon={<Mail size={15} />} type="email" value={form.email}
+              onChange={e => set('email', e.target.value)} placeholder="you@example.com" error={errors.email} />
 
-            <FormField label={t('reg.phone')}>
-              <div className="relative">
-                <Phone size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
-                  placeholder="050-0000000"
-                  className={inputCls()} />
-              </div>
-            </FormField>
+            <InputField label={t('reg.phone')} icon={<Phone size={15} />} type="tel" value={form.phone}
+              onChange={e => set('phone', e.target.value)} placeholder="050-0000000" />
 
-            <FormField label={t('reg.password')} error={errors.password}>
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('reg.password')}</label>
               <div className="relative">
-                <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type={showPw ? 'text' : 'password'} value={form.password}
-                  onChange={e => set('password', e.target.value)} placeholder="••••••••"
-                  className={`${inputCls(errors.password)} pl-10`} />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200">
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                <Lock size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={e => set('password', e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full border rounded-xl pr-10 pl-10 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-emerald-500/50 transition-all ${errors.password ? 'border-rose-500/50' : 'border-white/[0.08]'}`}
+                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'none' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
-            </FormField>
+              {errors.password && <p className="text-rose-400 text-[11px] mt-1">⚠ {errors.password}</p>}
+            </div>
 
-            <FormField label={t('reg.confirm')} error={errors.confirm}>
+            {/* Confirm */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('reg.confirm')}</label>
               <div className="relative">
-                <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type={showPw ? 'text' : 'password'} value={form.confirm}
-                  onChange={e => set('confirm', e.target.value)} placeholder="••••••••"
-                  className={inputCls(errors.confirm)} />
+                <Lock size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={form.confirm}
+                  onChange={e => set('confirm', e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full border rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-emerald-500/50 transition-all ${errors.confirm ? 'border-rose-500/50' : 'border-white/[0.08]'}`}
+                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'none' }}
+                />
               </div>
-            </FormField>
+              {errors.confirm && <p className="text-rose-400 text-[11px] mt-1">⚠ {errors.confirm}</p>}
+            </div>
 
             {errors.submit && (
-              <div className="bg-red-500/10 border border-red-500/40 rounded-xl px-4 py-2.5 text-red-400 text-sm">
+              <div className="bg-rose-500/10 border border-rose-500/25 rounded-xl px-4 py-2.5 text-rose-400 text-sm">
                 ⚠ {errors.submit}
               </div>
             )}
@@ -164,20 +177,19 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
+              className="w-full btn-shimmer text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.015] active:scale-[0.99] transition-transform disabled:opacity-60 text-sm mt-1"
             >
-              {loading ? (
-                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('reg.loading')}</>
-              ) : (
-                <><Sparkles size={16} /> {t('reg.btn')}</>
-              )}
+              {loading
+                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('reg.loading')}</>
+                : <><Sparkles size={15} /> {t('reg.btn')}</>
+              }
             </button>
           </form>
         </div>
 
-        <p className="text-center text-gray-400 text-sm mt-5">
+        <p className="text-center text-gray-500 text-sm mt-6">
           {t('reg.haveAccount')}{' '}
-          <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+          <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">
             {t('reg.loginHere')}
           </Link>
         </p>
@@ -186,22 +198,29 @@ export default function Register() {
   );
 }
 
-function FormField({ label, error, children }) {
+function InputField({ label, icon, type, value, onChange, placeholder, error }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-300 mb-1.5">{label}</label>
-      {children}
-      {error && <p className="text-red-400 text-xs mt-1">⚠ {error}</p>}
+      <label className="block text-xs font-semibold text-gray-400 mb-1.5">{label}</label>
+      <div className="relative">
+        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500">{icon}</span>
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`w-full border rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-emerald-500/50 transition-all ${error ? 'border-rose-500/50' : 'border-white/[0.08]'}`}
+          style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'none' }}
+        />
+      </div>
+      {error && <p className="text-rose-400 text-[11px] mt-1">⚠ {error}</p>}
     </div>
   );
 }
 
-const inputCls = (err) =>
-  `w-full bg-slate-700 border ${err ? 'border-red-500' : 'border-slate-600'} rounded-xl pr-10 pl-4 py-2.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all`;
-
 function GoogleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18">
+    <svg width="17" height="17" viewBox="0 0 18 18">
       <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
       <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
       <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18z"/>

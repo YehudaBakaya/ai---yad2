@@ -8,6 +8,13 @@ export default function SellerDealsPanel({ listingId }) {
   const [deals, setDeals]     = useState([]);
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
+  const [toasts, setToasts]   = useState([]);
+
+  const addToast = (type, text) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, type, text }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
+  };
 
   useEffect(() => {
     const unsubscribe = subscribeToListingDeals(listingId, (newDeals) => {
@@ -25,9 +32,14 @@ export default function SellerDealsPanel({ listingId }) {
         if (deal?.listingId) {
           listingsAPI.update(deal.listingId, { isActive: false }).catch(() => {});
         }
+        addToast('success', `✅ אישרת את העסקה — ₪${deals.find(d => d.id === dealId)?.agreedPrice?.toLocaleString()}`);
+      } else if (status === 'rejected') {
+        addToast('info', '❌ הצעה נדחתה');
       }
       setDeals(prev => prev.map(d => d.id === dealId ? { ...d, status } : d));
-    } catch {}
+    } catch {
+      addToast('error', 'שגיאה — נסה שוב');
+    }
   };
 
   const [counterModal, setCounterModal] = useState(null); // { dealId, listingPrice, agreedPrice }
@@ -46,9 +58,12 @@ export default function SellerDealsPanel({ listingId }) {
     setCounterSaving(true);
     try {
       await counterDeal(counterModal.dealId, counterPrice, counterMsg);
+      addToast('info', `🔄 הצעה נגדית נשלחה — ₪${Number(counterPrice).toLocaleString()}`);
       setCounterModal(null);
       setDeals(prev => prev.map(d => d.id === counterModal.dealId ? { ...d, status: 'countered' } : d));
-    } catch {} finally {
+    } catch {
+      addToast('error', 'שגיאה בשליחת הצעה נגדית');
+    } finally {
       setCounterSaving(false);
     }
   };
@@ -57,7 +72,26 @@ export default function SellerDealsPanel({ listingId }) {
   const resolved = deals.filter(d => d.status !== 'pending');
 
   return (
-    <div className="bg-slate-800 border border-amber-500/40 rounded-2xl overflow-hidden shadow-lg shadow-black/20">
+    <div className="relative bg-slate-800 border border-amber-500/40 rounded-2xl overflow-hidden shadow-lg shadow-black/20">
+
+      {/* Toast stack */}
+      <div className="fixed top-4 right-4 z-[10000] flex flex-col gap-2 pointer-events-none">
+        {toasts.map(toast => (
+          <div key={toast.id} className="animate-slideUp pointer-events-auto" style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            background: toast.type === 'success' ? 'linear-gradient(135deg,rgba(5,150,105,.95),rgba(16,185,129,.95))'
+              : toast.type === 'error' ? 'linear-gradient(135deg,rgba(185,28,28,.95),rgba(239,68,68,.95))'
+              : 'linear-gradient(135deg,rgba(99,102,241,.95),rgba(139,92,246,.95))',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            padding: '10px 14px', borderRadius: '14px',
+            boxShadow: '0 8px 32px rgba(0,0,0,.3)',
+            maxWidth: '280px', fontSize: '13px', fontWeight: '600', color: 'white',
+          }}>
+            {toast.text}
+          </div>
+        ))}
+      </div>
 
       {/* Header */}
       <div className="px-4 py-3 flex items-center justify-between border-b border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-transparent">
